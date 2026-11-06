@@ -1,5 +1,5 @@
-import { useEffect, useState, type CSSProperties } from "react";
-import { ChevronDown, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Modal, MoneyField } from "@/components/ui";
 import { PageHeader } from "@/components/shell";
@@ -21,7 +21,6 @@ import { useFinance } from "@/lib/store";
 
 export function QuincenaPanel() {
   const periods = useFinance((state) => state.periods);
-  const goals = useFinance((state) => state.goals);
   const intent = useFinance((state) => state.intent);
   const clearIntent = useFinance((state) => state.clearIntent);
   const setIncome = useFinance((state) => state.setIncome);
@@ -34,8 +33,6 @@ export function QuincenaPanel() {
   const removeCategory = useFinance((state) => state.removeCategory);
   const setItemAmount = useFinance((state) => state.setItemAmount);
   const transferToSavings = useFinance(state => state.transferToSavings);
-  const addToGoal = useFinance((state) => state.addToGoal);
-  const addGoal = useFinance((state) => state.addGoal);
   const openNext = useFinance((state) => state.openNext);
 
   const period = periods.find((item) => item.status === "open");
@@ -74,21 +71,25 @@ export function QuincenaPanel() {
   const days = daysUntil(safeEnd);
 
   return (
-    <div className="pb-24">
+    <div>
       <PageHeader
         title="Esta quincena"
         lede={`${formatRange(period.start, period.end)} · ${daysLabel(days)}`}
       />
 
-      <div className="world-banner"><span className="world-banner-mark" /><div><p>TU QUINCENA, CON SUPERPODERES</p><span>Cuida tu futuro. Disfruta el presente.</span></div><span className="world-banner-dot" /></div>
-      <section className="hero-card p-5">
-        <p className="text-xs text-muted">Tu bolsillo disponible</p>
-        <p className="mt-1 font-display text-5xl leading-none tabular-nums text-good">{formatMoney(surplus)}</p>
-        <p className="mt-3 text-sm text-muted">de {formatMoney(period.income)} de ingreso</p>
-        <Button full className="mt-3" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
-          Agregar a ahorros
-        </Button>
-        <div className="mt-5 flex items-center justify-between text-sm border-t border-line pt-4">
+      <section className="hero-card balance-overview">
+        <div className="balance-main">
+          <p className="balance-eyebrow"><Wallet className="size-4" /> TU BOLSILLO DISPONIBLE</p>
+          <p className={cn("balance-amount font-display tabular-nums", surplus < 0 ? "text-bad" : "text-fg")}>{formatMoney(surplus)}</p>
+          <p className="mt-3 text-sm text-muted">Cuida tu futuro. Disfruta el presente.</p>
+          <Button className="mt-6" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
+            <PiggyBank className="size-4" /> Agregar a ahorros <ArrowUpRight className="size-4" />
+          </Button>
+        </div>
+        <div className="balance-details">
+          <label className="text-xs font-medium text-muted">Ingreso neto de la quincena</label>
+          <div className="mt-2"><MoneyField label="Ingreso neto de la quincena" value={period.income} onChange={setIncome} /></div>
+          <div className="mt-5 flex items-start justify-between gap-4 text-sm">
           <div>
             <p className="text-muted">Gastos</p>
             <p className="font-display text-xl tabular-nums">{formatMoney(expenses)}</p>
@@ -101,17 +102,13 @@ export function QuincenaPanel() {
             <p className="text-xs text-muted">{ratePhrase(rate)}</p>
           </div>
         </div>
-      </section>
-
-      <section className="mt-6">
-        <label className="text-sm font-medium">Ingreso neto de la quincena</label>
-        <div className="mt-1">
-          <MoneyField label="Ingreso neto de la quincena" value={period.income} onChange={setIncome} />
+        <div className="budget-progress" role="progressbar" aria-label="Porcentaje del ingreso asignado" aria-valuemin={0} aria-valuemax={100} aria-valuenow={period.income > 0 ? Math.min(100, Math.max(0, Math.round((1 - rate) * 100))) : 0}><span style={{ width: `${period.income > 0 ? Math.min(100, Math.max(0, (1 - rate) * 100)) : 0}%` }} /></div>
+        <p className="mt-2 text-xs text-muted">{period.income > 0 ? 'Lo que ya asignaste de tu ingreso' : 'Registra tu ingreso para ver tu margen'}</p>
         </div>
       </section>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-2xl">Salidas</h2>
+        <div><p className="page-eyebrow mb-1">CADA CÓRDOBA, EN SU LUGAR</p><h2 className="font-display text-2xl">Tus rubros</h2></div>
         <Button variant="ghost" onClick={() => setAddCategoryOpen(true)} className="text-gold bg-surface-2 px-3">
           <Plus className="size-4" /> Nuevo Rubro
         </Button>
@@ -124,27 +121,26 @@ export function QuincenaPanel() {
           const isSaving = category.role === "life";
           
           return (
-            <div key={category.id} className="rounded-xl border border-line bg-surface shadow-sm overflow-hidden">
-              <div 
-                className="category-heading flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer"
-                onClick={() => setOpenIds((prev) => ({ ...prev, [category.id]: !open }))}
-              >
+            <div key={category.id} className="category-card card overflow-hidden">
+              <div className="category-heading flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="flex min-w-0 flex-1 basis-40 flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: `var(--cat-${category.tone})` }} />
-                    <h3 className="min-w-0 font-medium text-base break-words">{category.name}</h3>
+                    <h3 className="min-w-0 flex-1 font-medium text-base break-words"><button className="category-disclosure" aria-expanded={open} aria-controls={`category-${category.id}`} onClick={() => setOpenIds(prev => ({ ...prev, [category.id]: !open }))}>{category.name}<ChevronDown className={cn("size-4 shrink-0 text-muted transition-transform", open && "rotate-180")} /></button></h3>
                   </div>
                   
                   {/* Botón para cambiar entre Gasto / Ahorro directamente aquí */}
                   <div className="flex items-center gap-2 mt-1">
                     <button 
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "need"); }}
+                      aria-pressed={!isSaving}
                       className={cn("min-h-11 text-xs px-3 py-2 rounded-xl border", !isSaving ? "bg-bad/10 border-bad/40 text-bad" : "border-line text-muted")}
                     >
                       Gasto
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "life"); }}
+                      aria-pressed={isSaving}
                       className={cn("min-h-11 text-xs px-3 py-2 rounded-xl border", isSaving ? "bg-good/10 border-good/40 text-good" : "border-line text-muted")}
                     >
                       Ahorro
@@ -158,6 +154,7 @@ export function QuincenaPanel() {
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingCategory(category.id);
+                      setOpenIds(prev => ({ ...prev, [category.id]: true }));
                       setCategoryAmount(total);
                     }}
                     className="font-display text-lg tabular-nums rounded-xl px-3 py-2 break-all text-gold hover:bg-surface-2 active:scale-95 transition"
@@ -165,12 +162,11 @@ export function QuincenaPanel() {
                   >
                     {formatMoney(total)}
                   </button>
-                  <ChevronDown className={cn("size-5 text-muted transition-transform", open && "rotate-180")} />
                 </div>
               </div>
               
               {open && (
-                <div className="p-4 border-t border-line bg-surface-2/50">
+                <div id={`category-${category.id}`} className="category-content p-4 border-t border-line bg-surface-2/50">
                   <ul className="flex flex-col gap-4">
                     {category.items.map((item) => (
                       <ItemRow

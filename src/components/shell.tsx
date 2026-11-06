@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Home, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles } from "lucide-react";
+import { Link, useLocation } from "@tanstack/react-router";
+import { Home, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
@@ -13,6 +13,7 @@ const NAV = [
   { to: "/ahorro", label: "Ahorros", icon: PiggyBank },
   { to: "/historial", label: "Historial", icon: History },
   { to: "/plan", label: "Plan", icon: LineChart },
+  { to: "/ia", label: "Asistente", icon: Sparkles },
 ];
 
 type ShellContextValue = {
@@ -42,11 +43,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <ShellContext.Provider value={{ openSettings: () => setSettingsOpen(true), theme, setTheme }}>
       <div className="app-frame">
+      <a href="#main-content" className="skip-link">Ir al contenido</a>
       <div className="app-workspace mx-auto flex w-full max-w-6xl">
         {/* Barra Lateral (Escritorio) */}
-        <aside className="hidden w-64 shrink-0 flex-col px-6 py-8 md:flex">
+        <aside className="desktop-sidebar hidden w-64 shrink-0 flex-col px-5 py-8 md:flex">
           <Brand />
-          <nav className="mt-12 flex flex-col gap-2" aria-label="Secciones">
+          <p className="sidebar-eyebrow mt-12 mb-4">TU ESPACIO</p>
+          <nav className="flex flex-col gap-2" aria-label="Secciones">
             {NAV.map((item) => {
               const active = item.exact ? path === item.to : path.startsWith(item.to);
               const Icon = item.icon;
@@ -56,19 +59,21 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   to={item.to}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-medium transition-all duration-200",
+                    "nav-item flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-medium",
                     active 
                       ? "bg-gold text-gold-ink shadow-lg shadow-gold/20" 
                       : "text-muted hover:bg-surface hover:text-fg"
                   )}
                 >
-                  <Icon className={cn("size-5", active ? "text-white" : "")} />
+                  <Icon className="size-5" />
                   {item.label}
+                  {active && <ArrowUpRight className="ml-auto size-4 opacity-70" />}
                 </Link>
               );
             })}
           </nav>
           <div className="mt-auto pt-8">
+            <div className="sidebar-note mb-5"><span className="sidebar-eyebrow">UN PASO A LA VEZ</span><p>Tu futuro también se construye con pequeños gustitos.</p><span className="sidebar-note-line" /></div>
             <Button variant="ghost" className="w-full justify-start gap-3 text-muted hover:text-gold" onClick={() => setSettingsOpen(true)}>
               <Settings className="size-5" /> Ajustes
             </Button>
@@ -80,8 +85,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         {/* Contenido Principal */}
         <div className="min-w-0 flex-1 relative">
-          <main className="app-main px-4 pt-6 pb-8 md:px-8 md:pt-10">
-            {children}
+          <main id="main-content" tabIndex={-1} className="app-main px-4 pt-6 pb-8 md:px-8 md:pt-10">
+            <div key={path} className="page-content">{children}</div>
           </main>
           
 
@@ -94,7 +99,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.35rem)" }}
         aria-label="Secciones móviles"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-4 items-center gap-1 px-2 py-2">
+        <div className="mx-auto grid max-w-lg grid-cols-5 items-center gap-1 px-2 py-2">
           {NAV.map((item) => {
             const active = item.exact ? path === item.to : path.startsWith(item.to);
             const Icon = item.icon;
@@ -104,7 +109,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-300",
+                  "nav-item flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2",
                   active ? "text-gold bg-white/5" : "text-muted hover:text-fg"
                 )}
               >
@@ -124,7 +129,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         theme={theme}
         toastOptions={{
           style: {
-            background: "rgba(20, 45, 80, 0.85)",
+            background: "var(--glass-panel)",
             backdropFilter: "blur(12px)",
             border: "1px solid rgba(255, 255, 255, 0.15)",
             color: "var(--fg)",
@@ -140,7 +145,7 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
   const { openSettings, theme, setTheme } = useShell();
   return (
     <header className="page-header mb-8">
-      <div className="header-controls flex gap-0 bg-surface/50 rounded-full border border-line/50">
+      <div className="header-controls flex gap-1 rounded-full p-1" role="group" aria-label="Apariencia y ajustes">
         <IconButton
           label={theme === "dark" ? "Usar tema claro" : "Usar tema oscuro"}
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -153,7 +158,7 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
         </IconButton>
       </div>
       <div className="page-heading min-w-0">
-        <p className="text-[10px] font-bold tracking-[0.2em] text-gold uppercase mb-1">DORACASH · TU MUNDO FINANCIERO</p>
+        <p className="page-eyebrow mb-2">DORACASH <span aria-hidden="true">/</span> TU MUNDO FINANCIERO</p>
         <h1 className="font-display text-3xl md:text-4xl leading-tight text-fg drop-shadow-sm">{title}</h1>
       </div>
       <FinancialCompanions />
