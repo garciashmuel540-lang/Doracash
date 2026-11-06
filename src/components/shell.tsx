@@ -115,7 +115,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <FinancialCompanions />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       
       <Toaster
@@ -154,9 +153,9 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
       <div className="page-heading min-w-0">
         <p className="text-[10px] font-bold tracking-[0.2em] text-gold uppercase mb-1">DORACASH · TU MUNDO FINANCIERO</p>
         <h1 className="font-display text-3xl md:text-4xl leading-tight text-fg drop-shadow-sm">{title}</h1>
-        {lede ? <p className="mt-2 text-sm text-pretty text-muted">{lede}</p> : null}
       </div>
-
+      <FinancialCompanions />
+      {lede ? <p className="page-lede text-sm text-pretty text-muted">{lede}</p> : null}
     </header>
   );
 }

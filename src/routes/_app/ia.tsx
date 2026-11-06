@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useFinance } from "@/lib/store";
 import { advisorContext } from "@/lib/advisor";
-import { MascotAvatar } from "@/components/mascot-avatar";
+import { PageHeader } from "@/components/shell";
 import { openPeriod } from "@/lib/finance";
 
 export const Route = createFileRoute("/_app/ia")({
@@ -60,11 +60,10 @@ function IAChatPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-96 max-w-2xl mx-auto px-4">
+    <>
+      <PageHeader title="Tu equipo financiero" />
+      <div className="flex flex-col min-h-96 max-w-2xl mx-auto">
       <header className="py-4 border-b border-line">
-        <h1 className="font-display text-2xl flex items-center gap-2">
-          <MascotAvatar character={personaje} /> Tu equipo financiero
-        </h1>
         <div className="companion-tabs mt-4">{(["doraemon", "shinchan"] as const).map(c => <button key={c} aria-pressed={personaje === c} onClick={() => setPersonaje(c)}>{c === "doraemon" ? "Doraemon" : "Shin Chan"}</button>)}</div>
       </header>
 
@@ -99,6 +98,7 @@ function IAChatPage() {
           Enviar
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

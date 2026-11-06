@@ -219,7 +219,7 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .brand-mascot { display: block; width: 48px; height: 62px; flex-shrink: 0; }
 .brand-mascot .mascot-avatar { transform: scale(.65); transform-origin: top left; }
-.companions { position: fixed; right: 24px; bottom: 24px; z-index: 35; color: var(--fg); font-family: var(--font-sans); }
+.companions { position: relative; z-index: 35; color: var(--fg); font-family: var(--font-sans); }
 .companion-dock { display: flex; align-items: center; gap: 12px; }
 .companion-dock-label, .companion-restore { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); background: var(--glass-panel); border-radius: 99px; font-size: 12px; box-shadow: var(--shadow); }
 .companion-online { width: 6px; height: 6px; background: var(--good); border-radius: 50%; }
@@ -259,26 +259,48 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-form input { width: 100%; min-width: 0; padding: 12px; font-size: 16px; background: transparent; outline: none; }
 .companion-footer { display: flex; justify-content: space-between; padding: 6px 16px; gap: 8px; }
 .companion-footer a, .companion-footer button { display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 10px; color: var(--muted); }
-/* A single opaque pose stays visible throughout the greeting. */
+/* Complete gestures on one sprite: no transparency fades or whole-body floating. */
 .mascot-avatar { position: relative; display: inline-block; width: 76px; height: 96px; vertical-align: middle; }
 .mascot-sprite { position: absolute; inset: 0; background-image: url('/mascots/companions.webp'); background-size: 400% 400%; background-repeat: no-repeat; }
-.mascot-animated { transform-origin: 50% 90%; animation: pet-greet 5.6s ease-in-out infinite; will-change: transform; }
-.mascot-animated.shinchan { animation-delay: -2.8s; }
+.mascot-avatar { --pose-row: 0%; --expression-row: calc(33.3333% + 2px); }
+.mascot-avatar.shinchan { --pose-row: calc(66.6667% + 4px); --expression-row: calc(100% + 4px); }
+.mascot-sprite { background-position: 0% var(--pose-row); }
+.mascot-animated .mascot-sprite { animation: pet-gestures 8s steps(1, end) infinite; }
+.mascot-animated.shinchan .mascot-sprite { animation-delay: -3.2s; }
+.mascot-animated[data-mood="thinking"] .mascot-sprite { animation-name: pet-thinking; }
+.mascot-animated[data-mood="talking"] .mascot-sprite { animation-name: pet-talking; }
 .companion-characters { display: flex; align-items: center; gap: 0; }
 .companion-characters > .corner-pet { position: relative; width: 48px; height: 64px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 14px; cursor: pointer; }
 .corner-pet .mascot-avatar { width: 48px; height: 60px; }
 .corner-pet:focus-visible { outline: 2px solid var(--gold); }
 .mascot-greeting { position: absolute; top: 100%; right: 0; background: var(--glass-panel); color: var(--fg); border: 1px solid var(--line); padding: 7px 10px; border-radius: 12px 3px 12px 12px; font-size: 11px; max-width: 130px; width: max-content; pointer-events: none; opacity: 0; transition: opacity .2s ease; }
 .corner-pet:hover .mascot-greeting, .corner-pet:focus-visible .mascot-greeting { opacity: 1; }
-.companions[data-motion="paused"] .mascot-avatar { animation-play-state: paused; }
-@keyframes pet-greet {
-  0%, 60%, 100% { transform: translateY(0) rotate(0deg); }
-  12%, 36% { transform: translateY(-2px) rotate(-3deg); }
-  24%, 48% { transform: translateY(-1px) rotate(3deg); }
-  80% { transform: translateY(-1px) rotate(0deg); }
+.companions[data-motion="paused"] .mascot-sprite { animation-play-state: paused; }
+@keyframes pet-gestures {
+  0%, 30%, 66%, 100% { background-position: 0% var(--pose-row); }
+  6%, 24% { background-position: 33.3333% var(--pose-row); }
+  8.25%, 12.75%, 17.25% { background-position: 66.6667% var(--pose-row); }
+  10.5%, 15%, 19.5% { background-position: 100% var(--pose-row); }
+  21.75% { background-position: 33.3333% var(--expression-row); }
+  45% { background-position: 66.6667% var(--expression-row); }
+  46.5%, 92% { background-position: 100% var(--expression-row); }
+  54% { background-position: 0% var(--expression-row); }
+  62% { background-position: 33.3333% var(--expression-row); }
+  90.5% { background-position: 66.6667% var(--expression-row); }
+}
+@keyframes pet-thinking {
+  0%, 55%, 100% { background-position: 0% var(--pose-row); }
+  20%, 80% { background-position: 66.6667% var(--expression-row); }
+  35%, 82% { background-position: 100% var(--expression-row); }
+}
+@keyframes pet-talking {
+  0%, 40%, 100% { background-position: 33.3333% var(--expression-row); }
+  12%, 60% { background-position: 0% var(--expression-row); }
+  25%, 75% { background-position: 100% var(--pose-row); }
+  30%, 80% { background-position: 66.6667% var(--pose-row); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mascot-avatar { animation: none !important; will-change: auto; }
+  .mascot-sprite { animation: none !important; }
 }
 @keyframes companion-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) {
@@ -294,18 +316,16 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-panel { position: relative; z-index: 40; }
 
 
-/* Compact controls above the title; companions occupy the former controls slot. */
-.page-header { position: relative; padding-top: 64px; }
-.header-controls { position: absolute; top: 0; left: 0; width: max-content; }
-.page-heading { padding-right: 104px; }
-.page-heading > p:last-child:not(:first-child) { margin-right: -104px; }
-.companions { top: calc(max(24px, env(safe-area-inset-top)) + 64px); right: max(16px, calc((100vw - 1152px) / 2 + 32px)); bottom: auto; }
+/* Each page reserves a real header cell for its companions. */
+.page-header { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 18px 8px; align-items: start; }
+.header-controls { grid-column: 1 / -1; width: max-content; }
+.page-heading { min-width: 0; }
+.page-lede { grid-column: 1 / -1; margin-top: -10px; }
+.companions { position: relative; min-width: 0; }
 .companion-dock { gap: 0; justify-content: flex-end; }
 .companion-dock-label { display: none; }
+.companion-restore { width: 96px; padding: 8px; font-size: 10px; gap: 4px; }
 .companion-panel { position: absolute; right: 0; top: 76px; margin: 0; max-height: calc(100dvh - 200px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
 .companion-scroll { min-height: 0; flex: 1; }
 .companion-footer, .companion-form, .companion-header, .companion-tabs { flex-shrink: 0; }
 .companion-tabs .mascot-avatar { width: 30px; height: 40px; zoom: 1; margin-right: 0; }
-@media (min-width: 768px) {
-  .companions { top: calc(max(40px, env(safe-area-inset-top)) + 64px); }
-}
