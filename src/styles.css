@@ -259,40 +259,28 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-form input { width: 100%; min-width: 0; padding: 12px; font-size: 16px; background: transparent; outline: none; }
 .companion-footer { display: flex; justify-content: space-between; padding: 6px 16px; gap: 8px; }
 .companion-footer a, .companion-footer button { display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 10px; color: var(--muted); }
-/* Fixed companions: shared texture, GPU opacity fades between aligned poses. */
+/* A single opaque pose stays visible throughout the greeting. */
 .mascot-avatar { position: relative; display: inline-block; width: 76px; height: 96px; vertical-align: middle; }
 .mascot-sprite { position: absolute; inset: 0; background-image: url('/mascots/companions.webp'); background-size: 400% 400%; background-repeat: no-repeat; }
-.mascot-animated .mascot-frame { opacity: 0; animation: pet-pose-fade 3.2s linear infinite; animation-delay: var(--pose-delay); }
-.mascot-animated { animation: pet-breathe 4s ease-in-out infinite; }
-.mascot-animated[data-mood="thinking"] { animation: pet-think 3s ease-in-out infinite; }
-.mascot-animated[data-mood="talking"] { animation: pet-happy 1.2s ease-in-out 5; }
+.mascot-animated { transform-origin: 50% 90%; animation: pet-greet 5.6s ease-in-out infinite; will-change: transform; }
+.mascot-animated.shinchan { animation-delay: -2.8s; }
 .companion-characters { display: flex; align-items: center; gap: 0; }
-.companion-characters > .corner-pet { position: relative; width: 54px; height: 64px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 14px; cursor: pointer; }
-.corner-pet .mascot-avatar { width: 54px; height: 60px; transform: none !important; }
+.companion-characters > .corner-pet { position: relative; width: 48px; height: 64px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 14px; cursor: pointer; }
+.corner-pet .mascot-avatar { width: 48px; height: 60px; }
 .corner-pet:focus-visible { outline: 2px solid var(--gold); }
-.mascot-greeting { position: absolute; top: 100%; right: 0; background: var(--glass-panel); color: var(--fg); border: 1px solid var(--line); padding: 7px 10px; border-radius: 12px 3px 12px 12px; font-size: 11px; max-width: 130px; width: max-content; pointer-events: none; opacity: 0; }
+.mascot-greeting { position: absolute; top: 100%; right: 0; background: var(--glass-panel); color: var(--fg); border: 1px solid var(--line); padding: 7px 10px; border-radius: 12px 3px 12px 12px; font-size: 11px; max-width: 130px; width: max-content; pointer-events: none; opacity: 0; transition: opacity .2s ease; }
 .corner-pet:hover .mascot-greeting, .corner-pet:focus-visible .mascot-greeting { opacity: 1; }
-.companion-motion-toggle { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 50%; background: var(--glass-panel); color: var(--muted); }
-.companions[data-motion="paused"] .mascot-avatar, .companions[data-motion="paused"] .mascot-avatar * { animation-play-state: paused !important; }
-@keyframes pet-pose-fade { 0%,8% { opacity: 1; } 12.5%,95.5% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes pet-breathe { 0%,100% { translate: 0 0; } 50% { translate: 0 -1.5px; } }
-@keyframes pet-think { 0%,100% { rotate: -2deg; } 50% { rotate: 2deg; } }
-@keyframes pet-happy { 0%,100% { translate: 0 0; } 50% { translate: 0 -3px; } }
+.companions[data-motion="paused"] .mascot-avatar { animation-play-state: paused; }
+@keyframes pet-greet {
+  0%, 60%, 100% { transform: translateY(0) rotate(0deg); }
+  12%, 36% { transform: translateY(-2px) rotate(-3deg); }
+  24%, 48% { transform: translateY(-1px) rotate(3deg); }
+  80% { transform: translateY(-1px) rotate(0deg); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .mascot-avatar, .mascot-avatar * { animation: none !important; }
-  .mascot-animated .mascot-frame { opacity: 0; }
-  .mascot-animated .frame-0 { opacity: 1; }
+  .mascot-avatar { animation: none !important; will-change: auto; }
 }
 @keyframes companion-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 767px) {
-  .companions { bottom: calc(106px + env(safe-area-inset-bottom)); right: 12px; }
-  .companion-dock { justify-content: flex-end; gap: 4px; }
-  .companion-dock-label { font-size: 0; width: 44px; padding: 12px; }.companion-dock-label .companion-online { display: none; }
-  .companion-characters { gap: 0; }.companion-characters > button { width: 58px; height: 72px; }.companion-characters .mascot-avatar { transform: scale(.75); transform-origin: top left; }
-  .companion-panel { max-height: calc(100dvh - 210px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; margin-bottom: 4px; }
-  .companion-scroll { min-height: 0; max-height: none; flex: 1; }.companion-header { padding-top: 12px; }
-  .companion-footer { flex-shrink: 0; }.companion-dock:has(+ *) { margin-top: 4px; }
-}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
   .companion-panel, .companion-characters > button { animation: none; transition: none; }
@@ -306,20 +294,18 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-panel { position: relative; z-index: 40; }
 
 
-/* Top-right dock, with a dedicated header lane to keep controls accessible. */
-.companions { top: max(8px, env(safe-area-inset-top)); right: 12px; bottom: auto; }
-.companion-dock { gap: 4px; justify-content: flex-end; }
+/* Compact controls above the title; companions occupy the former controls slot. */
+.page-header { position: relative; padding-top: 64px; }
+.header-controls { position: absolute; top: 0; left: 0; width: max-content; }
+.page-heading { padding-right: 104px; }
+.page-heading > p:last-child:not(:first-child) { margin-right: -104px; }
+.companions { top: calc(max(24px, env(safe-area-inset-top)) + 64px); right: max(16px, calc((100vw - 1152px) / 2 + 32px)); bottom: auto; }
+.companion-dock { gap: 0; justify-content: flex-end; }
 .companion-dock-label { display: none; }
-.companion-panel { position: absolute; right: 0; top: 76px; margin: 0; max-height: calc(100dvh - 180px); display: flex; flex-direction: column; }
+.companion-panel { position: absolute; right: 0; top: 76px; margin: 0; max-height: calc(100dvh - 200px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
 .companion-scroll { min-height: 0; flex: 1; }
 .companion-footer, .companion-form, .companion-header, .companion-tabs { flex-shrink: 0; }
-main.pb-40 { padding-top: 88px !important; }
-@media (max-width: 767px) {
-  .companions { top: max(6px, env(safe-area-inset-top)); right: 8px; bottom: auto; }
-  .companion-characters > .corner-pet { width: 48px; height: 58px; }
-  .corner-pet .mascot-avatar { width: 48px; height: 54px; }
-  .companion-panel { top: 68px; max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); }
-  main.pb-40 { padding-top: 80px !important; }
-}
-.mascot-animated .frame-0 { opacity: 1; }
 .companion-tabs .mascot-avatar { width: 30px; height: 40px; zoom: 1; margin-right: 0; }
+@media (min-width: 768px) {
+  .companions { top: calc(max(40px, env(safe-area-inset-top)) + 64px); }
+}

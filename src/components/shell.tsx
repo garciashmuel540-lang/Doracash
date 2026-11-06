@@ -138,24 +138,25 @@ export function Shell({ children }: { children: React.ReactNode }) {
 export function PageHeader({ title, lede }: { title: string; lede?: string }) {
   const { openSettings, theme, setTheme } = useShell();
   return (
-    <header className="mb-8 flex items-start justify-between gap-4">
-      <div className="min-w-0">
+    <header className="page-header mb-8">
+      <div className="header-controls flex gap-0 bg-surface/50 rounded-full border border-line/50">
+        <IconButton
+          label={theme === "dark" ? "Usar tema claro" : "Usar tema oscuro"}
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="size-11 rounded-full hover:bg-white/10"
+        >
+          {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        </IconButton>
+        <IconButton label="Ajustes" onClick={openSettings} className="size-11 rounded-full hover:bg-white/10">
+          <Settings className="size-4" />
+        </IconButton>
+      </div>
+      <div className="page-heading min-w-0">
         <p className="text-[10px] font-bold tracking-[0.2em] text-gold uppercase mb-1">DORACASH · TU MUNDO FINANCIERO</p>
         <h1 className="font-display text-3xl md:text-4xl leading-tight text-fg drop-shadow-sm">{title}</h1>
         {lede ? <p className="mt-2 text-sm text-pretty text-muted">{lede}</p> : null}
       </div>
-      <div className="flex shrink-0 gap-2 bg-surface/50 p-1 rounded-full border border-line/50 backdrop-blur-md">
-        <IconButton
-          label={theme === "dark" ? "Usar tema claro" : "Usar tema oscuro"}
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="rounded-full hover:bg-white/10"
-        >
-          {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-        </IconButton>
-        <IconButton label="Ajustes" onClick={openSettings} className="rounded-full hover:bg-white/10">
-          <Settings className="size-4" />
-        </IconButton>
-      </div>
+
     </header>
   );
 }

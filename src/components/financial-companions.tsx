@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ChevronDown, MessageCircle, Send, Sparkles, X, Pause, Play } from 'lucide-react';
+import { ChevronDown, MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import { useFinance } from '@/lib/store';
 import { formatMoney, openPeriod } from '@/lib/finance';
 import { advisorContext } from '@/lib/advisor';
@@ -20,7 +20,6 @@ export function FinancialCompanions() {
   const [answer, setAnswer] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [motion, setMotion] = useState(true);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
@@ -48,7 +47,7 @@ export function FinancialCompanions() {
     finally { if (!abort.signal.aborted) setBusy(false); }
   }
   const name = character === 'doraemon' ? 'Doraemon' : 'Shin Chan';
-  return <aside className="companions" data-motion={motion && visible ? "playing" : "paused"} aria-label="Compañeros financieros">
+  return <aside className="companions" data-motion={visible ? "playing" : "paused"} aria-label="Compañeros financieros">
     {open && <section className="companion-panel" aria-label={`Consejos de ${name}`} onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}>
       <header className="companion-header"><div><p className="companion-eyebrow">TU EQUIPO FINANCIERO</p><h2>{name} te acompaña</h2></div><button className="companion-icon" aria-label="Minimizar compañeros" onClick={() => setOpen(false)}><ChevronDown size={20} /></button></header>
       <div className="companion-tabs" role="group" aria-label="Elegir compañero">
@@ -69,6 +68,6 @@ export function FinancialCompanions() {
       <form className="companion-form" onSubmit={e => { e.preventDefault(); void ask(question); }}><input ref={inputRef} aria-label={`Pregunta a ${name}`} maxLength={1200} placeholder="¿Cómo organizo mi dinero?" value={question} onChange={e => setQuestion(e.target.value)} /><button className="companion-icon" aria-label="Enviar pregunta" disabled={busy || !question.trim()}><Send size={18} /></button></form>
       <footer className="companion-footer"><Link to="/ia" onClick={() => setOpen(false)}>Abrir chat completo</Link><button onClick={() => toggleHidden(true)}><X size={13} /> Ocultar mascotas</button></footer>
     </section>}
-    {!hidden ? <div className="companion-dock"><button className="companion-dock-label" aria-expanded={open} onClick={() => setOpen(v => !v)}><span className="companion-online" /> Tu equipo financiero <MessageCircle size={16} /></button><div className="companion-characters">{(['doraemon', 'shinchan'] as const).map(c => <CornerMascot key={c} character={c} expanded={open && character === c} mood={c === character && open ? (busy ? "thinking" : answer ? "talking" : "hello") : "hello"} onActivate={() => { setCharacter(c); setOpen(v => c === character ? !v : true); }} />)}</div><button className="companion-motion-toggle" aria-label={motion ? "Pausar animaciones de mascotas" : "Activar animaciones de mascotas"} aria-pressed={!motion} onClick={() => setMotion(v => !v)}>{motion ? <Pause size={14} /> : <Play size={14} />}</button></div> : <button className="companion-restore" onClick={() => toggleHidden(false)} aria-label="Mostrar mascotas financieras"><MessageCircle size={18} /> Compañeros</button>}
+    {!hidden ? <div className="companion-dock"><button className="companion-dock-label" aria-expanded={open} onClick={() => setOpen(v => !v)}><span className="companion-online" /> Tu equipo financiero <MessageCircle size={16} /></button><div className="companion-characters">{(['doraemon', 'shinchan'] as const).map(c => <CornerMascot key={c} character={c} expanded={open && character === c} mood={c === character && open ? (busy ? "thinking" : answer ? "talking" : "hello") : "hello"} onActivate={() => { setCharacter(c); setOpen(v => c === character ? !v : true); }} />)}</div></div> : <button className="companion-restore" onClick={() => toggleHidden(false)} aria-label="Mostrar mascotas financieras"><MessageCircle size={18} /> Compañeros</button>}
   </aside>;
 }
