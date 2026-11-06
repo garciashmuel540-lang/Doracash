@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
   clampMoney,
+  currentQuincena,
+  periodSurplus,
+  type Category,
   openPeriod,
   uid,
   type Contribution,
@@ -35,6 +38,7 @@ type Store = {
   updateGoal: (id: string, patch: Partial<Goal>) => void;
   removeGoal: (id: string) => void;
   addToGoal: (id: string, amount: number) => void;
+  transferToSavings: (name: string, amount: number) => boolean;
   closePeriod: () => void;
   openNext: () => void;
   dismissIntro: () => void;
@@ -215,19 +219,27 @@ export const useFinance = create<Store>()(
           goals: state.goals.map((g) => (g.id === id ? { ...g, saved: g.saved + amount } : g)),
         })),
 
+      transferToSavings: (name, amount) => {
+        const state = get();
+        const period = openPeriod(state);
+        const value = clampMoney(amount);
+        if (!period || value <= 0 || value > periodSurplus(period)) return false;
+        const existing = state.goals.find(g => g.name === name);
+        set({
+          goals: existing ? state.goals.map(g => g.id === existing.id ? { ...g, saved: g.saved + value } : g)
+            : [...state.goals, { id: uid('goal'), name, target: 999999, saved: value, kind: 'custom' }],
+          periods: state.periods.map(p => p.id === period.id ? { ...p, setAside: (p.setAside || 0) + value } : p),
+        });
+        return true;
+      },
+
       closePeriod: () => set((state) => ({ periods: state.periods.map((p) => (p.status === "open" ? { ...p, status: "closed" } : p)) })),
 
       openNext: () => {
         set((state) => {
-          const hoy = new Date();
-          // Calculamos el inicio de la quincena actual (día 1 o 16)
-          const dia = hoy.getDate();
-          const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), dia > 15 ? 16 : 1);
-          const fin = new Date(inicio);
-          fin.setDate(inicio.getDate() + 14);
-
+          const range = currentQuincena();
           const lastClosed = state.periods.find((p) => p.status === 'closed');
-          const defaultCategories = lastClosed ? lastClosed.categories : [
+          const defaultCategories: Category[] = lastClosed ? lastClosed.categories : [
             { id: uid('cat'), name: 'Gastos del hogar', role: 'need', tone: 0, items: [] },
             { id: uid('cat'), name: 'Transporte', role: 'need', tone: 1, items: [] },
             { id: uid('cat'), name: 'Internet', role: 'need', tone: 2, items: [] },
@@ -239,11 +251,13 @@ export const useFinance = create<Store>()(
               ...state.periods.filter(p => p.status !== 'open'), // Borramos la que está rota
               {
                 id: uid('period'),
-                start: inicio.toISOString(),
-                end: fin.toISOString(),
+                start: range.start,
+                end: range.end,
                 income: 0,
                 categories: defaultCategories,
                 status: 'open',
+                setAside: 0,
+                contributions: [],
               }
             ]
           };

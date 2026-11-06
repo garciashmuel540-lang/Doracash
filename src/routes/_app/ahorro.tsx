@@ -4,7 +4,7 @@ import { Trash2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import { Button, Modal, MoneyField } from "@/components/ui";
 import { useFinance } from "@/lib/store";
-import { formatMoney, categoryTotal } from "@/lib/finance";
+import { formatMoney, roleAmount } from "@/lib/finance";
 
 export const Route = createFileRoute("/_app/ahorro")({
   component: AhorroPage,
@@ -28,9 +28,7 @@ function AhorroPage() {
   
   // Sumamos los rubros de la quincena marcados como "Ahorro"
   const savingsInPeriod = period
-    ? period.categories
-        .filter((c) => c.role === "life" || c.role === "debt")
-        .reduce((acc, c) => acc + categoryTotal(c), 0)
+    ? roleAmount(period, "life")
     : 0;
 
   const totalAhorrado = inAccounts + savingsInPeriod;
@@ -52,7 +50,7 @@ function AhorroPage() {
             <span className="font-medium">{formatMoney(inAccounts)}</span>
           </p>
           {savingsInPeriod > 0 && (
-            <p className="flex justify-between text-green-400">
+            <p className="flex justify-between text-good">
               <span>En rubros de esta quincena:</span>
               <span className="font-medium">{formatMoney(savingsInPeriod)}</span>
             </p>
@@ -77,7 +75,7 @@ function AhorroPage() {
             <div key={account.id} className="rounded-xl border border-line bg-surface p-4">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-medium text-lg">{account.name}</h3>
-                <button onClick={() => removeGoal(account.id)} className="text-red-400 hover:text-red-300 p-1">
+                <button aria-label={`Eliminar cuenta ${account.name}`} onClick={() => removeGoal(account.id)} className="text-bad min-h-11 min-w-11 grid place-items-center">
                   <Trash2 className="size-5" />
                 </button>
               </div>
@@ -86,6 +84,7 @@ function AhorroPage() {
                 <label className="text-sm text-muted">Saldo actual:</label>
                 <div className="flex-1">
                   <MoneyField 
+                    label={`Saldo de ${account.name}`}
                     value={account.saved} 
                     onChange={(val) => updateGoal(account.id, { saved: val } as any)} 
                   />
@@ -97,7 +96,7 @@ function AhorroPage() {
       )}
 
       {/* Modal para nueva cuenta */}
-      <Modal open={newAccountOpen} onOpenChange={setNewAccountOpen}>
+      <Modal title="Nueva cuenta de ahorro" open={newAccountOpen} onOpenChange={setNewAccountOpen}>
         <div className="p-5 flex flex-col gap-4">
           <h2 className="text-xl font-bold">Nueva Cuenta de Ahorro</h2>
           <input
@@ -109,7 +108,7 @@ function AhorroPage() {
           />
           <div>
             <label className="text-xs text-muted mb-1 block">Monto inicial (opcional)</label>
-            <MoneyField value={accountAmount} onChange={setAccountAmount} />
+            <MoneyField label="Saldo inicial de la cuenta" value={accountAmount} onChange={setAccountAmount} />
           </div>
           <Button 
             full 

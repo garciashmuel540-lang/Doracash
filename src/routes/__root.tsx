@@ -3,9 +3,9 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Quincena";
+const APP_NAME = "Doracash";
 
-const themeBoot = `try{var raw=localStorage.getItem("quincena");var theme="dark";if(raw){var t=JSON.parse(raw).state&&JSON.parse(raw).state.theme;if(t==="light"||t==="dark")theme=t;}document.documentElement.dataset.theme=theme;}catch(e){document.documentElement.dataset.theme="dark";}`;
+const themeBoot = `try{var raw=localStorage.getItem("finanzas-store");var theme="dark";if(raw){var t=JSON.parse(raw).state&&JSON.parse(raw).state.theme;if(t==="light"||t==="dark")theme=t;}document.documentElement.dataset.theme=theme;}catch(e){document.documentElement.dataset.theme="dark";}`;
 
 export const Route = createRootRoute({
   head: () => ({
@@ -17,7 +17,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Control de finanzas quincenales en córdobas: gastos, margen y ahorro.",
       },
-      { name: "theme-color", content: "#101614" },
+      { name: "theme-color", content: "#081626" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

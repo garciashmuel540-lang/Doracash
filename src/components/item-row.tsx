@@ -41,7 +41,7 @@ export function ItemRow({
           className="flex-1 accent-gold"
         />
         <div className="w-28">
-          <MoneyField value={amount} onChange={onAmount} />
+          <MoneyField label={`Monto de ${name}`} value={amount} onChange={onAmount} />
         </div>
       </div>
     </li>

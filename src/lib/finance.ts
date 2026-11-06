@@ -6,6 +6,7 @@ export type LineItem = {
   name: string;
   amount: number;
   max: number;
+  roleOverride?: Role;
 };
 
 export type Category = {
@@ -205,14 +206,11 @@ export function categoryTotal(category: Category) {
 }
 
 export function periodExpenses(period: Period) {
-  // Solo sumamos los rubros que sean gastos (need), no los ahorros (life) ni deudas (debt)
-  return period.categories
-    .filter((category) => category.role === 'need')
-    .reduce((sum, category) => sum + categoryTotal(category), 0);
+  return roleAmount(period, 'need') + roleAmount(period, 'debt');
 }
 
 export function periodSurplus(period: Period) {
-  return period.income - periodExpenses(period);
+  return period.income - periodExpenses(period) - roleAmount(period, 'life') - (period.setAside || 0);
 }
 
 export function savingsRate(period: Period) {
@@ -247,9 +245,8 @@ export function previousClosed(periods: Period[]) {
 }
 
 export function roleAmount(period: Period, role: Role) {
-  return period.categories
-    .filter((category) => category.role === role)
-    .reduce((sum, category) => sum + categoryTotal(category), 0);
+  return period.categories.reduce((sum, category) => sum + category.items.reduce(
+    (total, item) => total + ((item.roleOverride ?? category.role) === role ? item.amount : 0), 0), 0);
 }
 
 export function monthExpenseEstimate(period: Period, periods: Period[]) {
@@ -319,7 +316,7 @@ export function cloneCategories(categories: Category[]): Category[] {
 export function biggestCategory(period: Period) {
   let best: { category: Category; total: number } | null = null;
   for (const category of period.categories) {
-    const total = categoryTotal(category);
+    const total = category.items.filter(item => (item.roleOverride ?? category.role) !== 'life').reduce((sum, item) => sum + item.amount, 0);
     if (!best || total > best.total) best = { category, total };
   }
   return best && best.total > 0 ? best : null;
@@ -328,7 +325,7 @@ export function biggestCategory(period: Period) {
 export function buildInsights(period: Period, periods: Period[], goals: Goal[]): Insight[] {
   const income = period.income;
   const expenses = periodExpenses(period);
-  const surplus = income - expenses;
+  const surplus = periodSurplus(period);
   const rate = income > 0 ? surplus / income : 0;
   const pct = Math.round(rate * 100);
   const insights: Insight[] = [];

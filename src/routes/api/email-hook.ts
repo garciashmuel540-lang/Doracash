@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { GoogleGenAI } from '@google/genai'
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+
 
 // Función auxiliar para esperar
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -11,6 +11,7 @@ export const Route = createFileRoute('/api/email-hook')({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
           const body = await request.json()
           const emailText = body.text || body.html || JSON.stringify(body)
 
@@ -54,7 +55,7 @@ ${emailText}`
             throw ultimoError || new Error('Gemini no respondió tras 3 intentos')
           }
 
-          const resultado = JSON.parse(interaction.output_text)
+          const resultado = JSON.parse(interaction.output_text || '{}')
           console.log('[email-hook] Transacción clasificada:', resultado)
 
           return new Response(JSON.stringify({ ok: true, data: resultado }), {

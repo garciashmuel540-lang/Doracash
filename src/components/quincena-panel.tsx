@@ -33,6 +33,7 @@ export function QuincenaPanel() {
   const addCategory = useFinance((state) => state.addCategory);
   const removeCategory = useFinance((state) => state.removeCategory);
   const setItemAmount = useFinance((state) => state.setItemAmount);
+  const transferToSavings = useFinance(state => state.transferToSavings);
   const addToGoal = useFinance((state) => state.addToGoal);
   const addGoal = useFinance((state) => state.addGoal);
   const openNext = useFinance((state) => state.openNext);
@@ -79,8 +80,9 @@ export function QuincenaPanel() {
         lede={`${formatRange(period.start, period.end)} · ${daysLabel(days)}`}
       />
 
+      <div className="world-banner"><span className="world-banner-mark" /><div><p>TU QUINCENA, CON SUPERPODERES</p><span>Cuida tu futuro. Disfruta el presente.</span></div><span className="world-banner-dot" /></div>
       <section className="hero-card p-5">
-        <p className="text-xs text-muted">Te queda libre</p>
+        <p className="text-xs text-muted">Tu bolsillo disponible</p>
         <p className="mt-1 font-display text-5xl leading-none tabular-nums text-good">{formatMoney(surplus)}</p>
         <p className="mt-3 text-sm text-muted">de {formatMoney(period.income)} de ingreso</p>
         <Button full className="mt-3" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
@@ -92,7 +94,7 @@ export function QuincenaPanel() {
             <p className="font-display text-xl tabular-nums">{formatMoney(expenses)}</p>
           </div>
           <div className="text-right">
-            <p className="text-muted">Tasa de ahorro</p>
+            <p className="text-muted">Margen disponible</p>
             <p className={cn("font-display text-xl tabular-nums", tone === "good" ? "text-good" : tone === "bad" ? "text-bad" : "")}>
               {Math.round(rate * 100)}%
             </p>
@@ -104,7 +106,7 @@ export function QuincenaPanel() {
       <section className="mt-6">
         <label className="text-sm font-medium">Ingreso neto de la quincena</label>
         <div className="mt-1">
-          <MoneyField value={period.income} onChange={setIncome} />
+          <MoneyField label="Ingreso neto de la quincena" value={period.income} onChange={setIncome} />
         </div>
       </section>
 
@@ -119,7 +121,7 @@ export function QuincenaPanel() {
         {period.categories.map((category) => {
           const total = categoryTotal(category);
           const open = openIds[category.id] ?? false;
-          const isSaving = category.role === "life" || category.role === "debt";
+          const isSaving = category.role === "life";
           
           return (
             <div key={category.id} className="rounded-xl border border-line bg-surface shadow-sm overflow-hidden">
@@ -127,23 +129,23 @@ export function QuincenaPanel() {
                 className="flex items-center justify-between p-4 cursor-pointer" 
                 onClick={() => setOpenIds((prev) => ({ ...prev, [category.id]: !open }))}
               >
-                <div className="flex flex-col gap-1">
+                <div className="flex min-w-0 flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="size-3 rounded-full" style={{ backgroundColor: `var(--cat-${category.tone})` }} />
-                    <h3 className="font-medium text-lg">{category.name}</h3>
+                    <h3 className="font-medium text-base break-words">{category.name}</h3>
                   </div>
                   
                   {/* Botón para cambiar entre Gasto / Ahorro directamente aquí */}
                   <div className="flex items-center gap-2 mt-1">
                     <button 
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "need"); }}
-                      className={cn("text-xs px-2 py-1 rounded border", !isSaving ? "bg-red-500/20 border-red-500/50 text-red-200" : "border-line text-muted")}
+                      className={cn("text-xs px-2 py-1 rounded border", !isSaving ? "bg-bad/10 border-bad/40 text-bad" : "border-line text-muted")}
                     >
                       Gasto
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "life"); }}
-                      className={cn("text-xs px-2 py-1 rounded border", isSaving ? "bg-green-500/20 border-green-500/50 text-green-200" : "border-line text-muted")}
+                      className={cn("text-xs px-2 py-1 rounded border", isSaving ? "bg-good/10 border-good/40 text-good" : "border-line text-muted")}
                     >
                       Ahorro
                     </button>
@@ -188,7 +190,7 @@ export function QuincenaPanel() {
                   {editingCategory === category.id && (
                     <div className="mt-3 rounded-xl border border-line bg-surface p-3 flex flex-col gap-3">
                       <p className="text-sm font-medium">Monto de {category.name}</p>
-                      <MoneyField value={categoryAmount} onChange={setCategoryAmount} />
+                      <MoneyField label="Monto del rubro" value={categoryAmount} onChange={setCategoryAmount} />
                       <div className="flex gap-2">
                         <Button
                           full
@@ -225,7 +227,7 @@ export function QuincenaPanel() {
         })}
       </div>
 
-      <Modal open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
+      <Modal title="Nuevo rubro" open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
         <div className="p-5 flex flex-col gap-4">
           <h2 className="text-xl font-bold">Nuevo Rubro</h2>
           <input
@@ -251,11 +253,11 @@ export function QuincenaPanel() {
         </div>
       </Modal>
 
-      <Modal open={addToSavingsOpen} onOpenChange={setAddToSavingsOpen}>
+      <Modal title="Agregar a ahorros" open={addToSavingsOpen} onOpenChange={setAddToSavingsOpen}>
         <div className="p-5 flex flex-col gap-4">
           <h2 className="text-xl font-bold">Agregar a Ahorros</h2>
           <p className="text-sm text-muted">¿Cuánto quieres apartar?</p>
-          <MoneyField value={savingsAmount} onChange={setSavingsAmount} />
+          <MoneyField label="Monto a apartar" value={savingsAmount} onChange={setSavingsAmount} />
           
           <p className="text-sm font-medium mt-2">¿A qué cuenta?</p>
           <div className="flex flex-col gap-2">
@@ -264,20 +266,18 @@ export function QuincenaPanel() {
                 key={banco}
                 variant="ghost" 
                 className="w-full justify-between bg-surface-2"
-                disabled={savingsAmount <= 0}
+                disabled={savingsAmount <= 0 || savingsAmount > surplus}
                 onClick={() => {
-                  const existing = goals.find(g => g.name === banco);
-                  if (existing) {
-                    addToGoal(existing.id, savingsAmount);
-                  } else {
-                    addGoal({ name: banco, target: 999999, saved: savingsAmount, kind: 'custom' });
+                  if (!transferToSavings(banco, savingsAmount)) {
+                    toast.error("El monto supera el dinero disponible");
+                    return;
                   }
-                  toast.success();
+                  toast.success("Ahorro registrado y descontado del disponible");
                   setAddToSavingsOpen(false);
                 }}
               >
                 <span>{banco}</span>
-                <span className="text-xs text-muted">+ C30069{savingsAmount}</span>
+                <span className="text-xs text-muted">+ {formatMoney(savingsAmount)}</span>
               </Button>
             ))}
           </div>

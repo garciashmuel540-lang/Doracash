@@ -96,7 +96,7 @@ export function MoneyField({
           size === "lg" ? "text-2xl font-medium" : "text-base",
         )}
         value={shown}
-        onFocus={() => setDraft(String(value))}
+        onFocus={(event) => event.currentTarget.select()}
         onChange={(event) => {
           const digits = event.target.value.replace(/[^\d]/g, "");
           setDraft(digits);

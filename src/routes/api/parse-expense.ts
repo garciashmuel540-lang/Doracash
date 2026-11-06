@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { GoogleGenAI } from '@google/genai'
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -10,6 +10,7 @@ export const Route = createFileRoute('/api/parse-expense')({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
           const { texto } = await request.json()
           if (!texto || typeof texto !== 'string') {
             return new Response(JSON.stringify({ ok: false, error: 'Falta el campo "texto"' }), {
@@ -58,7 +59,7 @@ ${texto}`
           if (!interaction) throw ultimoError || new Error('Gemini no respondió')
 
           // Limpia posibles ```json ... ``` del modelo
-          const raw = interaction.output_text.trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim()
+          const raw = (interaction.output_text || '').trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim()
           const data = JSON.parse(raw)
 
           return new Response(JSON.stringify({ ok: true, data }), {

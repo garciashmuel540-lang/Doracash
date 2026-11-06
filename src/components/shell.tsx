@@ -4,6 +4,8 @@ import { Home, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles } fr
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
+import { FinancialCompanions } from "./financial-companions";
+import { MascotAvatar } from "./mascot-avatar";
 import { Button, Modal, IconButton } from "@/components/ui";
 
 const NAV = [
@@ -39,7 +41,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <ShellContext.Provider value={{ openSettings: () => setSettingsOpen(true), theme, setTheme }}>
-      <div className="mx-auto flex min-h-dvh max-w-5xl">
+      <div className="mx-auto flex min-h-dvh max-w-6xl">
         {/* Barra Lateral (Escritorio) */}
         <aside className="hidden w-64 shrink-0 flex-col px-6 py-8 md:flex">
           <Brand />
@@ -77,18 +79,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         {/* Contenido Principal */}
         <div className="min-w-0 flex-1 relative">
-          <main className="px-4 pt-6 pb-40 md:px-8 md:pt-10 md:pb-16 min-h-dvh">
+          <main className="px-4 pt-6 pb-40 md:px-8 md:pt-10 md:pb-44 min-h-dvh">
             {children}
           </main>
           
-          {/* Botón Flotante IA (Solo móvil) */}
-          <Link
-            to="/ia"
-            className="fixed bottom-28 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#1E90FF] to-[#0077CC] text-white shadow-[0_8px_30px_rgba(30,144,255,0.5)] ai-float md:hidden border border-white/20"
-            aria-label="Abrir Asistente IA"
-          >
-            <Sparkles className="size-6" />
-          </Link>
+
         </div>
       </div>
 
@@ -120,6 +115,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
+      <FinancialCompanions />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       
       <Toaster
@@ -144,8 +140,8 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
   return (
     <header className="mb-8 flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-[10px] font-bold tracking-[0.2em] text-gold uppercase mb-1">Quincena</p>
-        <h1 className="font-display text-3xl md:text-4xl leading-tight text-white drop-shadow-sm">{title}</h1>
+        <p className="text-[10px] font-bold tracking-[0.2em] text-gold uppercase mb-1">DORACASH · TU MUNDO FINANCIERO</p>
+        <h1 className="font-display text-3xl md:text-4xl leading-tight text-fg drop-shadow-sm">{title}</h1>
         {lede ? <p className="mt-2 text-sm text-pretty text-muted">{lede}</p> : null}
       </div>
       <div className="flex shrink-0 gap-2 bg-surface/50 p-1 rounded-full border border-line/50 backdrop-blur-md">
@@ -167,12 +163,10 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
 function Brand() {
   return (
     <div className="flex items-center gap-3">
-      <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#1E90FF] to-[#005B99] font-display text-2xl text-white shadow-lg shadow-blue-500/30 border border-white/20">
-        Q
-      </span>
+      <span className="brand-mascot"><MascotAvatar character="doraemon" /></span>
       <div>
-        <p className="font-display text-2xl leading-none text-white">Quincena</p>
-        <p className="mt-1 text-[10px] uppercase tracking-widest text-gold/80 font-semibold">Córdobas, pago a pago</p>
+        <p className="font-display text-2xl leading-none text-fg">Doracash</p>
+        <p className="mt-1 text-[10px] uppercase tracking-widest text-gold/80 font-semibold">Un futuro con gustitos</p>
       </div>
     </div>
   );
@@ -192,8 +186,8 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   }, [open]);
 
   function download() {
-    const { periods, goals, freeSavings, theme, introDismissed } = useFinance.getState();
-    const blob = new Blob([JSON.stringify({ version: 1, periods, goals, freeSavings, theme, introDismissed }, null, 2)], { type: "application/json" });
+    const { periods, goals, theme, introDismissed } = useFinance.getState();
+    const blob = new Blob([JSON.stringify({ version: 1, periods, goals, theme, introDismissed }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -209,10 +203,11 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result));
-        if (!sanitizeData(parsed) || !importFinance(parsed)) {
-          setError("Ese archivo no parece un respaldo de Quincena.");
+        if (!sanitizeData(parsed)) {
+          setError("Ese archivo no parece un respaldo de Doracash.");
           return;
         }
+        importFinance(parsed);
         setError("");
         onOpenChange(false);
         toast.success("Respaldo restaurado");

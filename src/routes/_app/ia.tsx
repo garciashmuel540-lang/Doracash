@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useFinance } from "@/lib/store";
-import { periodExpenses, openPeriod } from "@/lib/finance";
+import { advisorContext } from "@/lib/advisor";
+import { MascotAvatar } from "@/components/mascot-avatar";
+import { openPeriod } from "@/lib/finance";
 
 export const Route = createFileRoute("/_app/ia")({
   component: IAChatPage,
@@ -13,6 +15,7 @@ function IAChatPage() {
   const [mensajes, setMensajes] = useState<Message[]>([
     { role: "ia", text: "¡Hola! Soy tu asistente. ¿En qué te puedo ayudar hoy?" }
   ]);
+  const [personaje, setPersonaje] = useState<"doraemon" | "shinchan">("doraemon");
   const [input, setInput] = useState("");
   const [cargando, setCargando] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -33,18 +36,14 @@ function IAChatPage() {
     setCargando(true);
 
     // Preparamos los datos reales para la IA
-    const contexto = {
-      libre: (period?.income || 0) - (period ? periodExpenses(period) : 0),
-      gastos: period ? periodExpenses(period) : 0,
-      ahorro: data.goals.reduce((acc, g) => acc + g.saved, 0),
-      metas: data.goals.map(g => `${g.name} (${g.saved}/${g.target})`).join(', ')
-    };
+    const contexto = advisorContext(period, data.goals);
 
     try {
       const res = await fetch("/api/chat-ia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensaje: nuevoMensaje.text, contexto }),
+        signal: AbortSignal.timeout(30000),
+        body: JSON.stringify({ mensaje: nuevoMensaje.text, contexto, personaje }),
       });
       const json = await res.json();
       
@@ -61,18 +60,19 @@ function IAChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] max-w-2xl mx-auto px-4">
+    <div className="flex flex-col min-h-96 max-w-2xl mx-auto px-4">
       <header className="py-4 border-b border-line">
         <h1 className="font-display text-2xl flex items-center gap-2">
-          <span className="text-2xl">✨</span> Asistente IA
+          <MascotAvatar character={personaje} /> Tu equipo financiero
         </h1>
+        <div className="companion-tabs mt-4">{(["doraemon", "shinchan"] as const).map(c => <button key={c} aria-pressed={personaje === c} onClick={() => setPersonaje(c)}>{c === "doraemon" ? "Doraemon" : "Shin Chan"}</button>)}</div>
       </header>
 
-      <div className="flex-1 overflow-y-auto py-4 space-y-4">
+      <div className="flex-1 min-h-64 overflow-y-auto py-4 space-y-4">
         {mensajes.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
-              m.role === "user" ? "bg-[#1E90FF] text-white rounded-br-sm" : "bg-surface-2 text-fg rounded-bl-sm"
+              m.role === "user" ? "bg-gold text-gold-ink rounded-br-sm" : "bg-surface-2 text-fg rounded-bl-sm"
             }`}>
               {m.text}
             </div>
@@ -87,13 +87,14 @@ function IAChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
+          aria-label="Pregunta a tu compañero financiero"
           placeholder="Pregúntame sobre tus finanzas..."
           className="flex-1 rounded-full bg-surface-2 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gold"
         />
         <button
           onClick={enviar}
           disabled={cargando || !input.trim()}
-          className="rounded-full bg-[#1E90FF] px-6 text-white font-bold disabled:opacity-50"
+          className="rounded-full bg-gold px-6 text-gold-ink font-bold disabled:opacity-50"
         >
           Enviar
         </button>
