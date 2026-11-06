@@ -225,7 +225,7 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-online { width: 6px; height: 6px; background: var(--good); border-radius: 50%; }
 .companion-characters { display: flex; gap: 8px; }
 .companion-characters > button { width: 76px; height: 96px; border-radius: 25px; transition: transform .2s ease; }
-.companion-characters > button:hover, .companion-characters > button[aria-expanded="true"] { transform: translateY(-5px); }
+
 .companion-panel { width: 380px; max-width: calc(100vw - 32px); margin-bottom: 12px; border: 1px solid var(--line); border-radius: 26px; background: var(--glass-panel); box-shadow: 0 24px 80px #0004, inset 0 1px #ffffff30; overflow: hidden; animation: companion-in .2s ease-out; }
 @supports (backdrop-filter: blur(1px)) {
   .companion-panel { background: color-mix(in srgb, var(--glass-panel) 93%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
@@ -259,37 +259,30 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-form input { width: 100%; min-width: 0; padding: 12px; font-size: 16px; background: transparent; outline: none; }
 .companion-footer { display: flex; justify-content: space-between; padding: 6px 16px; gap: 8px; }
 .companion-footer a, .companion-footer button { display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 10px; color: var(--muted); }
-/* Generated 3D sprite atlas: one shared lightweight texture for both companions. */
+/* Fixed companions: shared texture, GPU opacity fades between aligned poses. */
 .mascot-avatar { position: relative; display: inline-block; width: 76px; height: 96px; vertical-align: middle; }
-.mascot-sprite { position: absolute; inset: 0; background-image: url('/mascots/companions.webp'); background-size: 400% 400%; background-position: 0 0; background-repeat: no-repeat; }
-.shinchan .mascot-sprite { background-position: 0 calc(66.6667% + 4px); }
-.mascot-animated .mascot-sprite { animation: dora-greet 8s step-end infinite; }
-.mascot-animated.shinchan .mascot-sprite { animation: shin-greet 9s step-end infinite; }
-.mascot-animated { animation: pet-breathe 3.2s ease-in-out infinite; }
-.mascot-animated[data-mood="thinking"] { animation: pet-think 2s ease-in-out infinite; }
-.mascot-animated[data-mood="talking"] { animation: pet-happy .8s ease-in-out 5; }
-.companion-characters { display: contents; }
-.companion-characters > .roaming-pet { position: fixed; left: auto; top: auto; right: 20px; bottom: 150px; width: 96px; height: 110px; padding: 0; touch-action: none; cursor: grab; transition: transform 2.4s ease-in-out; border-radius: 28px; z-index: 36; }
-.companion-characters > .roaming-pet:first-child { right: 120px; }
-.companion-characters > .roaming-pet.is-dragging { transition: none; cursor: grabbing; z-index: 38; }
-.roaming-pet .mascot-avatar { width: 96px; height: 104px; transform: none !important; }
-.roaming-pet:focus-visible { outline: 2px solid var(--gold); }
-.mascot-greeting { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--glass-panel); color: var(--fg); border: 1px solid var(--line); padding: 7px 10px; border-radius: 12px 12px 3px 12px; font-size: 11px; max-width: 130px; width: max-content; pointer-events: none; opacity: 0; }
-.roaming-pet:hover .mascot-greeting, .roaming-pet:focus-visible .mascot-greeting { opacity: 1; }
+.mascot-sprite { position: absolute; inset: 0; background-image: url('/mascots/companions.webp'); background-size: 400% 400%; background-repeat: no-repeat; }
+.mascot-animated .mascot-frame { opacity: 0; animation: pet-pose-fade 3.2s linear infinite; animation-delay: var(--pose-delay); }
+.mascot-animated { animation: pet-breathe 4s ease-in-out infinite; }
+.mascot-animated[data-mood="thinking"] { animation: pet-think 3s ease-in-out infinite; }
+.mascot-animated[data-mood="talking"] { animation: pet-happy 1.2s ease-in-out 5; }
+.companion-characters { display: flex; align-items: center; gap: 0; }
+.companion-characters > .corner-pet { position: relative; width: 54px; height: 64px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 14px; cursor: pointer; }
+.corner-pet .mascot-avatar { width: 54px; height: 60px; transform: none !important; }
+.corner-pet:focus-visible { outline: 2px solid var(--gold); }
+.mascot-greeting { position: absolute; top: 100%; right: 0; background: var(--glass-panel); color: var(--fg); border: 1px solid var(--line); padding: 7px 10px; border-radius: 12px 3px 12px 12px; font-size: 11px; max-width: 130px; width: max-content; pointer-events: none; opacity: 0; }
+.corner-pet:hover .mascot-greeting, .corner-pet:focus-visible .mascot-greeting { opacity: 1; }
 .companion-motion-toggle { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 50%; background: var(--glass-panel); color: var(--muted); }
 .companions[data-motion="paused"] .mascot-avatar, .companions[data-motion="paused"] .mascot-avatar * { animation-play-state: paused !important; }
-@keyframes dora-greet {
-  0%,100% { background-position: 0 0; } 3% { background-position: 33.3333% 0; } 6%,12% { background-position: 66.6667% 0; } 9%,15% { background-position: 100% 0; }
-  18% { background-position: 0 calc(33.3333% + 2px); } 23% { background-position: 33.3333% calc(33.3333% + 2px); } 28%,60% { background-position: 0 0; } 62% { background-position: 66.6667% calc(33.3333% + 2px); } 64%,85% { background-position: 100% calc(33.3333% + 2px); } 89% { background-position: 0 0; }
+@keyframes pet-pose-fade { 0%,8% { opacity: 1; } 12.5%,95.5% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes pet-breathe { 0%,100% { translate: 0 0; } 50% { translate: 0 -1.5px; } }
+@keyframes pet-think { 0%,100% { rotate: -2deg; } 50% { rotate: 2deg; } }
+@keyframes pet-happy { 0%,100% { translate: 0 0; } 50% { translate: 0 -3px; } }
+@media (prefers-reduced-motion: reduce) {
+  .mascot-avatar, .mascot-avatar * { animation: none !important; }
+  .mascot-animated .mascot-frame { opacity: 0; }
+  .mascot-animated .frame-0 { opacity: 1; }
 }
-@keyframes shin-greet {
-  0%,100% { background-position: 0 calc(66.6667% + 4px); } 4% { background-position: 33.3333% calc(66.6667% + 4px); } 8%,16% { background-position: 66.6667% calc(66.6667% + 4px); } 12%,20% { background-position: 100% calc(66.6667% + 4px); }
-  24% { background-position: 0 calc(100% + 4px); } 29% { background-position: 33.3333% calc(100% + 4px); } 34%,60% { background-position: 0 calc(66.6667% + 4px); } 62% { background-position: 66.6667% calc(100% + 4px); } 65%,85% { background-position: 100% calc(100% + 4px); } 89% { background-position: 0 calc(66.6667% + 4px); }
-}
-@keyframes pet-breathe { 0%,100% { translate: 0 0; } 50% { translate: 0 -3px; } }
-@keyframes pet-think { 0%,100% { rotate: -3deg; } 50% { rotate: 3deg; } }
-@keyframes pet-happy { 0%,100% { translate: 0 0; } 50% { translate: 0 -7px; } }
-@media (prefers-reduced-motion: reduce) { .mascot-avatar, .mascot-avatar * { animation: none !important; } .companion-characters > .roaming-pet { transition: none; } }
 @keyframes companion-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 767px) {
   .companions { bottom: calc(106px + env(safe-area-inset-bottom)); right: 12px; }
@@ -311,4 +304,22 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .world-banner-dot { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 30% 20%, #fff1ab, #ffd166 55%, #d49224); box-shadow: 0 4px 12px #ffd16625; }
 
 .companion-panel { position: relative; z-index: 40; }
-.companions[data-motion="paused"] .roaming-pet { transition: none; }
+
+
+/* Top-right dock, with a dedicated header lane to keep controls accessible. */
+.companions { top: max(8px, env(safe-area-inset-top)); right: 12px; bottom: auto; }
+.companion-dock { gap: 4px; justify-content: flex-end; }
+.companion-dock-label { display: none; }
+.companion-panel { position: absolute; right: 0; top: 76px; margin: 0; max-height: calc(100dvh - 180px); display: flex; flex-direction: column; }
+.companion-scroll { min-height: 0; flex: 1; }
+.companion-footer, .companion-form, .companion-header, .companion-tabs { flex-shrink: 0; }
+main.pb-40 { padding-top: 88px !important; }
+@media (max-width: 767px) {
+  .companions { top: max(6px, env(safe-area-inset-top)); right: 8px; bottom: auto; }
+  .companion-characters > .corner-pet { width: 48px; height: 58px; }
+  .corner-pet .mascot-avatar { width: 48px; height: 54px; }
+  .companion-panel { top: 68px; max-height: calc(100dvh - 180px - env(safe-area-inset-bottom)); }
+  main.pb-40 { padding-top: 80px !important; }
+}
+.mascot-animated .frame-0 { opacity: 1; }
+.companion-tabs .mascot-avatar { width: 30px; height: 40px; zoom: 1; margin-right: 0; }
