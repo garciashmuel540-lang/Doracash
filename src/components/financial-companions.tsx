@@ -109,6 +109,7 @@ export function FinancialCompanions() {
           <div className="companion-budget"><div><span>Ahorro adicional</span><strong>{formatMoney(context.ahorroSugerido)}</strong></div><div><span>Reserva para pendientes</span><strong>{formatMoney(context.reservaSugerida)}</strong></div><div><span>Tope para gustitos</span><strong>{formatMoney(context.gustosSugeridos)}</strong></div></div>
           <p className="companion-note">Propuesta conservadora: hasta 10% del ingreso para ahorrar; del resto, 80% de reserva y 20% para gustos. Confirma que registraste todos tus pagos. No mueve dinero.</p>
         </>}
+        {context.deudaTarjetaManual && <p className="companion-note" role="status">Deuda de tarjeta registrada: <strong>{formatMoney(context.deudaTarjetaManual.monto)}</strong>. Tomada de “Pago a tarjeta de crédito” de tu quincena. Actualízala allí; ya está incluida en el presupuesto.</p>}
         <details className="companion-note">
           <summary>{tarjeta ? 'Tarjeta guardada · ver o actualizar datos' : 'Añadir información de mi tarjeta'}</summary>
           <p>Solo se guarda en este navegador. Ambos compañeros reciben estos datos cuando les haces una consulta. Actualiza los saldos después de compras o pagos; no hay conexión con el banco.</p>
@@ -118,7 +119,7 @@ export function FinancialCompanions() {
           {tarjeta && <button className="companion-primary" onClick={() => { try { saveCardContext(''); setCardStatus('Datos de tarjeta eliminados.'); } catch { setCardStatus('No se pudo eliminar.'); } }}>Eliminar datos de tarjeta</button>}
         </details>
         {cardStatus && <p className="companion-note" role="status">{cardStatus}</p>}
-        {tarjeta && <button className="companion-primary" disabled={busy} onClick={() => ask('Revisa los datos de mi tarjeta y explícame corte, vencimiento, retiro y tasas. Distingue el saldo reportado del pago de contado y dime qué falta confirmar antes de comprar.')}>Consultar mi tarjeta</button>}
+        {(tarjeta || context.deudaTarjetaManual) && <button className="companion-primary" disabled={busy} onClick={() => ask('Revisa los datos de mi tarjeta y explícame corte, vencimiento, retiro y tasas. Distingue el saldo reportado del pago de contado y dime qué falta confirmar antes de comprar.')}>Consultar mi tarjeta</button>}
         <button className="companion-primary" disabled={busy || !context.hayQuincena || context.ingreso <= 0} onClick={() => ask('Analiza mi quincena y dame tres recomendaciones concretas de ahorro, gastos y gustitos. Usa los cálculos y explica qué datos faltan.')}><Sparkles size={16} />{busy ? 'Consultando la IA…' : 'Pedir consejo a la IA'}</button>
         {answer && <div className="companion-answer" role="status"><strong>{name}</strong><p>{answer}</p></div>}
         {error && <p role="alert" className="companion-error">{error}</p>}

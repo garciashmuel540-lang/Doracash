@@ -33,3 +33,31 @@ test('reparto no excede el disponible ni con importes pequeños', () => {
     assert.equal(result.ahorroSugerido + result.reservaSugerida + result.gustosSugeridos, ingreso);
   }
 });
+
+test('usa deuda manual actualizada sin duplicar su descuento y conserva cero explícito', () => {
+  const paymentPeriod: Period = { ...period, categories: [{ id: 'expenses', name: 'Gastos', role: 'need', tone: 0,
+    items: [{ id: 'card', name: 'Pago a tarjeta de crédito', amount: 125, max: 1000 }, { id: 'other', name: 'Comida', amount: 75, max: 1000 }] }] };
+  const before = advisorContext(paymentPeriod, [], 'Saldo anterior de ejemplo C$ 999');
+  assert.equal(before.deudaTarjetaManual?.monto, 125);
+  assert.equal(before.deudaTarjetaManual?.partidas.length, 1);
+  assert.equal(before.libre, 9300);
+  paymentPeriod.categories[0].items[0].amount = 0;
+  const after = advisorContext(paymentPeriod, [], 'Saldo anterior de ejemplo C$ 999');
+  assert.equal(after.deudaTarjetaManual?.monto, 0);
+  assert.equal(after.libre, 9425);
+  assert.equal(advisorContext(undefined, []).deudaTarjetaManual, null);
+});
+test('reconoce acentos, categorías y varias partidas sin incluir gastos ajenos', () => {
+  const result = advisorContext({ ...period, categories: [
+    { id: 'cards', name: 'Tarjeta de crédito', role: 'debt', tone: 0, items: [{ id: 'a', name: 'BAC', amount: 30, max: 100 }] },
+    { id: 'expenses', name: 'Gastos', role: 'need', tone: 0, items: [
+      { id: 'b', name: 'PAGO A TARJETA DE CREDITO', amount: 20, max: 100, roleOverride: 'debt' },
+      { id: 'c', name: 'Tarjeta de regalo', amount: 80, max: 100 },
+    ] },
+  ] }, []);
+  assert.equal(result.deudaTarjetaManual?.monto, 50);
+  assert.equal(result.deudaTarjetaManual?.partidas.length, 2);
+  assert.equal(result.compromisos, 50);
+  assert.equal(result.gastos, 80);
+  assert.equal(result.libre, 9370);
+});
