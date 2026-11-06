@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-gold-fill: var(--gold-fill);
+  --color-gold-ink: var(--gold-ink);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-overlay: var(--overlay);
+}
+
+:root, [data-theme="dark"] {
+  color-scheme: dark;
+  /* Fondo azul noche premium */
+  --bg: #071326;
+  --fg: #FFFFFF;
+  --muted: #8EBBE8;
+  
+  /* Superficies tipo cristal */
+  --surface: rgba(20, 45, 80, 0.65);
+  --surface-2: rgba(30, 65, 110, 0.4);
+  --line: rgba(255, 255, 255, 0.12);
+  
+  /* Doraimon Colors */
+  --gold: #1E90FF; /* Azul Doraemon */
+  --gold-fill: #1E90FF;
+  --gold-ink: #FFFFFF;
+  --good: #FFD700; /* Amarillo Campanita */
+  --bad: #E60012;  /* Rojo Collar */
+  
+  --overlay: rgba(7, 19, 38, 0.75);
+  --hero-wash: rgba(30, 144, 255, 0.15);
+  
+  /* Sombras ambientales y de cristal */
+  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(16px);
+  
+  /* Colores de categorías */
+  --cat-0: #1E90FF;
+  --cat-1: #E60012;
+  --cat-2: #FFD700;
+  --cat-3: #87CEEB;
+  --cat-4: #FFB84D;
+  --cat-5: #FF6B9D;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #E8F4FF;
+  --fg: #071326;
+  --muted: #4A6A8A;
+  --surface: rgba(255, 255, 255, 0.7);
+  --surface-2: rgba(255, 255, 255, 0.5);
+  --line: rgba(11, 30, 58, 0.1);
+  --gold: #1E90FF;
+  --gold-fill: #1E90FF;
+  --gold-ink: #FFFFFF;
+  --good: #0c7a43;
+  --bad: #b3261e;
+  --overlay: rgba(255, 255, 255, 0.6);
+  --hero-wash: rgba(30, 144, 255, 0.1);
+  --shadow: 0 8px 32px 0 rgba(30, 144, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  --cat-0: #1E90FF;
+  --cat-1: #E60012;
+  --cat-2: #FFD700;
+  --cat-3: #3d7f96;
+  --cat-4: #FFB84D;
+  --cat-5: #a8648c;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--bg);
+    color: var(--fg);
+  }
+  body {
+    min-height: 100dvh;
+    /* Fondo con gradientes ambientales para simular profundidad */
+    background: radial-gradient(circle at 15% 10%, rgba(30, 144, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 85% 90%, rgba(255, 215, 0, 0.08) 0%, transparent 40%),
+                var(--bg);
+    background-attachment: fixed;
+    color: var(--fg);
+    font-family: var(--font-sans);
+    text-wrap: pretty;
+  }
+  h1, h2, h3 { text-wrap: balance; }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+  input, button, textarea { font-family: inherit; }
+  ::selection { background: var(--gold-fill); color: var(--gold-ink); }
+}
+
+@layer components {
+  /* Tarjeta base con Liquid Glass */
+  .card {
+    background: var(--surface);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    border-radius: 1.25rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  /* Tarjeta principal (Hero) con reflejo Cyan */
+  .hero-card {
+    position: relative;
+    background: linear-gradient(135deg, rgba(30, 144, 255, 0.1) 0%, transparent 100%), var(--surface);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 40px -10px rgba(30, 144, 255, 0.3), var(--shadow);
+    border-radius: 1.5rem;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  }
+
+  /* Campos de entrada */
+  .field {
+    background: var(--surface-2);
+    backdrop-filter: blur(8px);
+    border-radius: 0.85rem;
+    border: 1px solid transparent;
+    transition: all 160ms ease;
+  }
+  .field:focus-within {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.2);
+  }
+
+  /* Barra de navegación flotante Liquid Glass */
+  .glass-nav {
+    background: rgba(7, 19, 38, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  }
+  [data-theme="light"] .glass-nav {
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 10px 40px rgba(30, 144, 255, 0.15);
+  }
+
+  /* Animación para el botón flotante de la IA */
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+    100% { transform: translateY(0px); }
+  }
+  .ai-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .tone-dot[data-tone="0"], .tone-seg[data-tone="0"] { background: var(--cat-0); }
+  .tone-dot[data-tone="1"], .tone-seg[data-tone="1"] { background: var(--cat-1); }
+  .tone-dot[data-tone="2"], .tone-seg[data-tone="2"] { background: var(--cat-2); }
+  .tone-dot[data-tone="3"], .tone-seg[data-tone="3"] { background: var(--cat-3); }
+  .tone-dot[data-tone="4"], .tone-seg[data-tone="4"] { background: var(--cat-4); }
+  .tone-dot[data-tone="5"], .tone-seg[data-tone="5"] { background: var(--cat-5); }
+
+  .fold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms cubic-bezier(0.4, 0, 0.2, 1); }
+  .fold[data-open="true"] { grid-template-rows: 1fr; }
+  .fold-inner { min-height: 0; overflow: hidden; }
+  
+  .pb-nav { padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)); }
+
+  .sheet { animation: sheet-in 250ms cubic-bezier(0.4, 0, 0.2, 1); }
+  @keyframes sheet-in {
+    from { opacity: 0; transform: translateY(15px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fold, .sheet, .field, .ai-float { transition: none; animation: none; }
+}

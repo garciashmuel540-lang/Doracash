@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Quincena",
+      "hasCanvas": false,
+      "bodyTextLen": 1024,
+      "bodyTextHash": "5e3c3232abe1891cc88a8ba2296ba2388f75ee9f1ee814f8874d0c0862cabc2b",
+      "bodyTextPrefix": "Q Quincena Córdobas, pago a pago Quincena Ahorro Historial Plan ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Quincena",
+      "hasCanvas": false,
+      "bodyTextLen": 925,
+      "bodyTextHash": "6631904891d1904b79f59d677b3be6747447f8863072909815ffeee9ea04cce9",
+      "bodyTextPrefix": "QUINCENA Esta quincena 1–15 de noviembre · quedan 12 días Te que",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [
+    "BRAND NOTE: no custom public/og.jpg — the platform will serve the og.grok.me placeholder. Custom cards are the default for games of every kind (DOM board/word games included), whimsical apps, creative tools, and brand-forward pages — only plain utilities (converters, CRUD trackers, admin dashboards) keep the placeholder. If this app is not a plain utility, finish the brand-asset pass per /workspace/.grok/skills/og/SKILL.md."
+  ],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
