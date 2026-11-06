@@ -58,7 +58,7 @@ function AhorroPage() {
         </div>
       </section>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="font-display text-2xl">Tus Cuentas de Ahorro</h2>
         <Button variant="ghost" onClick={() => setNewAccountOpen(true)} className="text-gold bg-surface-2 px-3">
           <Plus className="size-4" /> Nueva
@@ -73,16 +73,16 @@ function AhorroPage() {
         <div className="flex flex-col gap-4">
           {goals.map((account) => (
             <div key={account.id} className="rounded-xl border border-line bg-surface p-4">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium text-lg">{account.name}</h3>
-                <button aria-label={`Eliminar cuenta ${account.name}`} onClick={() => removeGoal(account.id)} className="text-bad min-h-11 min-w-11 grid place-items-center">
+              <div className="flex justify-between items-start gap-3 mb-3">
+                <h3 className="min-w-0 break-words font-medium text-lg">{account.name}</h3>
+                <button aria-label={`Eliminar cuenta ${account.name}`} onClick={() => removeGoal(account.id)} className="shrink-0 text-bad min-h-11 min-w-11 grid place-items-center">
                   <Trash2 className="size-5" />
                 </button>
               </div>
               
               <div className="flex items-center gap-2">
                 <label className="text-sm text-muted">Saldo actual:</label>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <MoneyField 
                     label={`Saldo de ${account.name}`}
                     value={account.saved} 

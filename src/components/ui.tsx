@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { formatPlain, parseMoney } from "@/lib/finance";
 
 const buttonStyles = cva(
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex min-h-11 max-w-full whitespace-normal py-2 text-center items-center justify-center gap-2 rounded-full px-5 text-sm font-medium transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-40",
   {
     variants: {
       variant: {
@@ -51,7 +51,7 @@ export function IconButton({
       type="button"
       aria-label={label}
       className={cn(
-        "grid size-11 place-items-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-fg",
+        "grid size-11 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-fg",
         className,
       )}
       {...props}
@@ -79,7 +79,7 @@ export function MoneyField({
   const shown = draft ?? formatPlain(value);
 
   return (
-    <div className={cn("field flex items-center gap-1 px-3", size === "lg" ? "h-14" : "h-11", className)}>
+    <div className={cn("field min-w-0 flex items-center gap-1 px-3", size === "lg" ? "h-14" : "h-11", className)}>
       <label htmlFor={id} className="sr-only">
         {label}
       </label>
@@ -127,7 +127,7 @@ export function Modal({
         <Dialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
         <Dialog.Content className="sheet fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-3xl bg-surface px-5 pt-5 pb-8 shadow-none outline-none md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[28rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
           <div className="mb-4 flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0 break-words">
               <Dialog.Title className="font-display text-2xl text-fg">{title}</Dialog.Title>
               {description ? (
                 <Dialog.Description className="mt-1 text-sm text-pretty text-muted">
@@ -138,7 +138,7 @@ export function Modal({
               )}
             </div>
             <Dialog.Close
-              className="grid size-11 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-fg"
+              className="grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-fg"
               aria-label="Cerrar"
             >
               <X className="size-5" />

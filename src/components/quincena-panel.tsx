@@ -110,7 +110,7 @@ export function QuincenaPanel() {
         </div>
       </section>
 
-      <div className="mt-8 flex items-center justify-between">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-2xl">Salidas</h2>
         <Button variant="ghost" onClick={() => setAddCategoryOpen(true)} className="text-gold bg-surface-2 px-3">
           <Plus className="size-4" /> Nuevo Rubro
@@ -126,33 +126,33 @@ export function QuincenaPanel() {
           return (
             <div key={category.id} className="rounded-xl border border-line bg-surface shadow-sm overflow-hidden">
               <div 
-                className="flex items-center justify-between p-4 cursor-pointer" 
+                className="category-heading flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer"
                 onClick={() => setOpenIds((prev) => ({ ...prev, [category.id]: !open }))}
               >
-                <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex min-w-0 flex-1 basis-40 flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="size-3 rounded-full" style={{ backgroundColor: `var(--cat-${category.tone})` }} />
-                    <h3 className="font-medium text-base break-words">{category.name}</h3>
+                    <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: `var(--cat-${category.tone})` }} />
+                    <h3 className="min-w-0 font-medium text-base break-words">{category.name}</h3>
                   </div>
                   
                   {/* Botón para cambiar entre Gasto / Ahorro directamente aquí */}
                   <div className="flex items-center gap-2 mt-1">
                     <button 
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "need"); }}
-                      className={cn("text-xs px-2 py-1 rounded border", !isSaving ? "bg-bad/10 border-bad/40 text-bad" : "border-line text-muted")}
+                      className={cn("min-h-11 text-xs px-3 py-2 rounded-xl border", !isSaving ? "bg-bad/10 border-bad/40 text-bad" : "border-line text-muted")}
                     >
                       Gasto
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "life"); }}
-                      className={cn("text-xs px-2 py-1 rounded border", isSaving ? "bg-good/10 border-good/40 text-good" : "border-line text-muted")}
+                      className={cn("min-h-11 text-xs px-3 py-2 rounded-xl border", isSaving ? "bg-good/10 border-good/40 text-good" : "border-line text-muted")}
                     >
                       Ahorro
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -160,7 +160,7 @@ export function QuincenaPanel() {
                       setEditingCategory(category.id);
                       setCategoryAmount(total);
                     }}
-                    className="font-display text-lg tabular-nums rounded-xl px-3 py-2 -mr-2 text-gold hover:bg-surface-2 active:scale-95 transition"
+                    className="font-display text-lg tabular-nums rounded-xl px-3 py-2 break-all text-gold hover:bg-surface-2 active:scale-95 transition"
                     aria-label={`Editar monto de ${category.name}`}
                   >
                     {formatMoney(total)}
@@ -191,7 +191,7 @@ export function QuincenaPanel() {
                     <div className="mt-3 rounded-xl border border-line bg-surface p-3 flex flex-col gap-3">
                       <p className="text-sm font-medium">Monto de {category.name}</p>
                       <MoneyField label="Monto del rubro" value={categoryAmount} onChange={setCategoryAmount} />
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           full
                           onClick={() => {

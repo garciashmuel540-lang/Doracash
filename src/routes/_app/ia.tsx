@@ -73,7 +73,7 @@ function IAChatPage() {
       <div className="flex-1 min-h-64 overflow-y-auto py-4 space-y-4">
         {mensajes.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
+            <div className={`max-w-[85%] break-words whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
               m.role === "user" ? "bg-gold text-gold-ink rounded-br-sm" : "bg-surface-2 text-fg rounded-bl-sm"
             }`}>
               {m.text}
@@ -91,12 +91,12 @@ function IAChatPage() {
           onKeyDown={(e) => e.key === "Enter" && enviar()}
           aria-label="Pregunta a tu compañero financiero"
           placeholder="Pregúntame sobre tus finanzas..."
-          className="flex-1 rounded-full bg-surface-2 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gold"
+          className="min-w-0 flex-1 rounded-full bg-surface-2 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gold"
         />
         <button
           onClick={enviar}
           disabled={cargando || !input.trim()}
-          className="rounded-full bg-gold px-6 text-gold-ink font-bold disabled:opacity-50"
+          className="shrink-0 rounded-full bg-gold px-4 text-gold-ink font-bold disabled:opacity-50"
         >
           Enviar
         </button>

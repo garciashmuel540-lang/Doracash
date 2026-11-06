@@ -41,7 +41,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <ShellContext.Provider value={{ openSettings: () => setSettingsOpen(true), theme, setTheme }}>
-      <div className="mx-auto flex min-h-dvh max-w-6xl">
+      <div className="app-frame">
+      <div className="app-workspace mx-auto flex w-full max-w-6xl">
         {/* Barra Lateral (Escritorio) */}
         <aside className="hidden w-64 shrink-0 flex-col px-6 py-8 md:flex">
           <Brand />
@@ -79,7 +80,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         {/* Contenido Principal */}
         <div className="min-w-0 flex-1 relative">
-          <main className="px-4 pt-6 pb-40 md:px-8 md:pt-10 md:pb-44 min-h-dvh">
+          <main className="app-main px-4 pt-6 pb-8 md:px-8 md:pt-10">
             {children}
           </main>
           
@@ -89,11 +90,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Barra de Navegación Flotante (Móvil) */}
       <nav
-        className="fixed bottom-5 inset-x-4 z-30 glass-nav rounded-3xl md:hidden"
+        className="mobile-navigation glass-nav rounded-3xl md:hidden"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.35rem)" }}
         aria-label="Secciones móviles"
       >
-        <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-2">
+        <div className="mx-auto grid max-w-lg grid-cols-4 items-center gap-1 px-2 py-2">
           {NAV.map((item) => {
             const active = item.exact ? path === item.to : path.startsWith(item.to);
             const Icon = item.icon;
@@ -103,7 +104,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-300",
+                  "flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-300",
                   active ? "text-gold bg-white/5" : "text-muted hover:text-fg"
                 )}
               >
@@ -115,6 +116,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
+      </div>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       
       <Toaster

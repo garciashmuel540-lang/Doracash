@@ -316,26 +316,41 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-panel { position: relative; z-index: 40; }
 
 
-/* Each page reserves a real header cell for its companions. */
-.page-header { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 18px 8px; align-items: start; }
-.header-controls { grid-column: 1 / -1; width: max-content; }
-.page-heading { min-width: 0; }
-.page-lede { grid-column: 1 / -1; margin-top: -10px; }
-.companions { position: relative; min-width: 0; }
-.companion-dock { gap: 0; justify-content: flex-end; }
+/* Header and companions stay in document flow, including on narrow screens. */
+.page-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "heading controls" "lede lede" "companions companions"; gap: 16px; align-items: start; }
+.header-controls { grid-area: controls; width: max-content; }
+.page-heading { grid-area: heading; min-width: 0; overflow-wrap: anywhere; }
+.page-lede { grid-area: lede; }
+.companions { grid-area: companions; position: relative; min-width: 0; z-index: auto; }
+.companion-dock { gap: 12px; justify-content: flex-start; flex-wrap: wrap; }
 .companion-dock-label { display: none; }
-.companion-restore { width: 96px; padding: 8px; font-size: 10px; gap: 4px; }
-.companion-panel { position: absolute; right: 0; top: 76px; margin: 0; max-height: calc(100dvh - 200px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
-.companion-scroll { min-height: 0; flex: 1; }
-.companion-footer, .companion-form, .companion-header, .companion-tabs { flex-shrink: 0; }
-.companion-tabs .mascot-avatar { width: 30px; height: 40px; zoom: 1; margin-right: 0; }
-
-/* Companions occupy their own row, keeping headings and finance text clear. */
-.companions[data-active="true"] { grid-column: 1 / -1; }
-.companion-dock { gap: 12px; }
-.companion-characters > .corner-pet { width: 56px; height: 74px; }
+.companion-restore { width: auto; min-height: 44px; padding: 10px 16px; font-size: 12px; }
+.companion-characters > .corner-pet { width: 56px; height: 74px; flex-shrink: 0; }
 .corner-pet .mascot-avatar { width: 56px; height: 70px; }
-.companions .companion-panel { position: relative; top: auto; right: auto; width: 100%; max-width: 100%; margin-top: 12px; max-height: min(650px, 75dvh); }
+.companions .companion-panel { position: relative; z-index: auto; top: auto; right: auto; width: 100%; max-width: 100%; margin: 12px 0 0; max-height: none; display: flex; flex-direction: column; }
+.companion-scroll { max-height: none; min-height: 0; overflow: visible; padding: 8px 18px 16px; }
+.companion-primary { margin-top: 12px; padding: 12px 16px; line-height: 1.5; white-space: normal; }
+.companion-primary > svg { flex-shrink: 0; }
+.companion-header { gap: 12px; }
+.companion-header > div { min-width: 0; overflow-wrap: anywhere; }
+.companion-tabs > button { min-width: 0; overflow-wrap: anywhere; }
+.companion-footer { flex-wrap: wrap; gap: 8px 16px; padding: 8px 16px; }
+.companion-budget > div { flex-wrap: wrap; }
+.companion-budget strong { overflow-wrap: anywhere; }
+.companion-note summary { min-height: 44px; padding-block: 12px; cursor: pointer; }
+.companion-note textarea { display: block; resize: vertical; max-width: 100%; font-size: 16px; }
+.companion-tabs .mascot-avatar { width: 30px; height: 40px; zoom: 1; margin-right: 0; }
+.app-main { min-width: 0; overflow-wrap: anywhere; }
+.app-frame { min-height: 100dvh; }
+@media (max-width: 767px) {
+  .app-frame { height: 100dvh; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+  .app-workspace { min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; }
+  .app-main { padding-bottom: 24px; }
+  .mobile-navigation { position: relative; margin: 8px 12px 0; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+  .page-header { grid-template-columns: minmax(0, 1fr); grid-template-areas: "controls" "heading" "lede" "companions"; }
+  .header-controls { justify-self: end; }
+  .sheet { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+}
 .companion-bubble { position: relative; display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 18px 4px 18px 18px; background: var(--glass-panel); font-size: 13px; line-height: 1.6; animation: companion-in .22s ease-out; }
 .companion-bubble > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .companion-bubble p { margin-top: 6px; }
