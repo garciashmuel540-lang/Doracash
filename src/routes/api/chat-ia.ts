@@ -34,7 +34,7 @@ export const Route = createFileRoute('/api/chat-ia')({
       const ahorroSugerido = Math.min(disponible, Math.floor(contexto.ingreso * .1));
       const reservaSugerida = Math.floor((disponible - ahorroSugerido) * .8);
       const datos = { ...contexto, libre, ahorroSugerido, reservaSugerida, gustosSugeridos: disponible - ahorroSugerido - reservaSugerida, tarjeta: 'SIN DATOS' };
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}:generateContent`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: `Eres el compañero financiero ${personaje === 'doraemon' ? 'Doraemon: cálido, prudente, organizado y atento al futuro' : 'Shin Chan: divertido y travieso, pero responsable con los gustitos y las deudas'}. Habla en español, máximo 180 palabras, texto simple. Tu personalidad jamás justifica malgastar.
@@ -45,7 +45,11 @@ NO hay datos de tarjetas: no inventes límite, saldo, intereses ni fechas, ni re
           generationConfig: { maxOutputTokens: 1600, temperature: .4 },
         }),
       });
-      if (!response.ok) return json({ ok: false, error: response.status === 429 ? 'La IA está ocupada. Espera un momento e inténtalo otra vez.' : 'La IA no pudo responder. Inténtalo de nuevo más tarde.' }, 503);
+      if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        console.error('[chat-ia] Proveedor no disponible', { status: response.status, code: failure?.error?.status });
+        return json({ ok: false, error: response.status === 429 ? 'Gemini alcanzó su límite de uso. Revisa la cuota de la IA o inténtalo más tarde.' : response.status === 404 ? 'El modelo de Gemini configurado no está disponible.' : response.status === 400 || response.status === 401 || response.status === 403 ? 'Gemini rechazó la configuración de acceso. Revisa la clave y los permisos de la IA.' : 'La IA no pudo responder. Inténtalo de nuevo más tarde.' }, 503);
+      }
       const data = await response.json();
       const respuesta = data.candidates?.[0]?.content?.parts?.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought).map((p: { text: string }) => p.text).join('\n').trim();
       if (!respuesta) return json({ ok: false, error: 'La IA no devolvió un consejo. Prueba con otra pregunta.' }, 502);
