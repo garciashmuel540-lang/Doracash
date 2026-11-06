@@ -329,3 +329,22 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-scroll { min-height: 0; flex: 1; }
 .companion-footer, .companion-form, .companion-header, .companion-tabs { flex-shrink: 0; }
 .companion-tabs .mascot-avatar { width: 30px; height: 40px; zoom: 1; margin-right: 0; }
+
+/* Companions occupy their own row, keeping headings and finance text clear. */
+.companions[data-active="true"] { grid-column: 1 / -1; }
+.companion-dock { gap: 12px; }
+.companion-characters > .corner-pet { width: 56px; height: 74px; }
+.corner-pet .mascot-avatar { width: 56px; height: 70px; }
+.companions .companion-panel { position: relative; top: auto; right: auto; width: 100%; max-width: 100%; margin-top: 12px; max-height: min(650px, 75dvh); }
+.companion-bubble { position: relative; display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 18px 4px 18px 18px; background: var(--glass-panel); font-size: 13px; line-height: 1.6; animation: companion-in .22s ease-out; }
+.companion-bubble > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.companion-bubble p { margin-top: 6px; }
+.companion-bubble strong { color: var(--gold); }
+.companions .mascot-greeting { display: none; }
+/* Preserve the sprite gestures; eased, anchored motion softens pose changes. */
+.corner-pet .mascot-animated { transform-origin: 50% 95%; animation: pet-settle 2.4s ease-in-out infinite; }
+@keyframes pet-settle { 0%, 100% { transform: rotate(-1deg) scaleY(1); } 50% { transform: rotate(1deg) scaleY(.98); } }
+.companions[data-motion="paused"] .mascot-animated { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .corner-pet .mascot-animated, .companion-bubble { animation: none; }
+}

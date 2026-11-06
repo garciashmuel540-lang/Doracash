@@ -4,7 +4,7 @@ import { ChevronDown, MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import { useFinance } from '@/lib/store';
 import { formatMoney, openPeriod } from '@/lib/finance';
 import { advisorContext } from '@/lib/advisor';
-import { MascotAvatar } from './mascot-avatar';
+import { companionAdvice, claimAdvice } from '@/lib/companion-advice';
 import { CornerMascot } from './roaming-mascot';
 
 type Character = 'doraemon' | 'shinchan';
@@ -14,7 +14,10 @@ export function FinancialCompanions() {
   const context = advisorContext(openPeriod({ periods }), goals);
   const fingerprint = JSON.stringify(context);
   const [open, setOpen] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const advice = companionAdvice(context);
+  const adviceKey = advice ? `${context.inicio}:${new Date().toDateString()}:${advice.kind}` : null;
+  const showingNotice = !open && notice === adviceKey && advice !== null;
   const [character, setCharacter] = useState<Character>('doraemon');
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -28,11 +31,26 @@ export function FinancialCompanions() {
   }, []);
   const controller = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { setHidden(localStorage.getItem('doracash-companions-hidden') === 'true'); }, []);
+  useEffect(() => {
+    if (open || !visible || !adviceKey) return;
+    const timer = window.setTimeout(() => {
+      // Do not interrupt editing or another dialog.
+      if (document.querySelector('[role="dialog"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return;
+      if (!claimAdvice(adviceKey)) return;
+      setCharacter(Math.random() < .5 ? 'doraemon' : 'shinchan');
+      setNotice(adviceKey);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [adviceKey, open, visible]);
   useEffect(() => { controller.current?.abort(); setBusy(false); setAnswer(''); setError(''); }, [fingerprint, character]);
   useEffect(() => () => controller.current?.abort(), []);
-  useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
-  function toggleHidden(value: boolean) { setHidden(value); setOpen(false); localStorage.setItem('doracash-companions-hidden', String(value)); }
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  function close() { setOpen(false); setNotice(null); toggleRef.current?.focus(); }
+  function toggle() {
+    setNotice(null);
+    if (!open) setCharacter(Math.random() < .5 ? 'doraemon' : 'shinchan');
+    setOpen(value => !value);
+  }
   async function ask(message: string) {
     if (busy || !message.trim()) return;
     const abort = new AbortController(); controller.current = abort;
@@ -47,11 +65,19 @@ export function FinancialCompanions() {
     finally { if (!abort.signal.aborted) setBusy(false); }
   }
   const name = character === 'doraemon' ? 'Doraemon' : 'Shin Chan';
-  return <aside className="companions" data-motion={visible ? "playing" : "paused"} aria-label="Compañeros financieros">
+  return <aside className="companions" data-active={open || showingNotice} onKeyDown={e => { if (e.key === 'Escape') close(); }} data-motion={visible ? "playing" : "paused"} aria-label="Compañeros financieros">
+    <div className="companion-dock">
+      <button ref={toggleRef} className="companion-restore" aria-expanded={open} onClick={toggle}><MessageCircle size={18} /> Compañeros</button>
+      {(open || showingNotice) && <div className="companion-characters"><CornerMascot character={character} expanded={open} mood={busy ? 'thinking' : showingNotice || answer ? 'talking' : 'hello'} onActivate={() => { setNotice(null); setOpen(true); }} /></div>}
+    </div>
+    {showingNotice && <div className="companion-bubble" role="status">
+      <div><strong>{name}</strong><p>{advice.text} <strong>{formatMoney(advice.amount)}</strong>. {advice.action}</p></div>
+      <button className="companion-icon" aria-label="Cerrar consejo" onClick={close}><X size={18} /></button>
+    </div>}
     {open && <section className="companion-panel" aria-label={`Consejos de ${name}`} onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}>
-      <header className="companion-header"><div><p className="companion-eyebrow">TU EQUIPO FINANCIERO</p><h2>{name} te acompaña</h2></div><button className="companion-icon" aria-label="Minimizar compañeros" onClick={() => setOpen(false)}><ChevronDown size={20} /></button></header>
+      <header className="companion-header"><div><p className="companion-eyebrow">TU EQUIPO FINANCIERO</p><h2>{name} te acompaña</h2></div><button className="companion-icon" aria-label="Minimizar compañeros" onClick={close}><ChevronDown size={20} /></button></header>
       <div className="companion-tabs" role="group" aria-label="Elegir compañero">
-        {(['doraemon', 'shinchan'] as const).map(c => <button key={c} aria-pressed={c === character} onClick={() => { setCharacter(c); }}><MascotAvatar character={c} /><span>{c === 'doraemon' ? 'Doraemon' : 'Shin Chan'}<small>{c === 'doraemon' ? 'Tu bolsillo del futuro' : 'Gustitos con cabeza'}</small></span></button>)}
+        {(['doraemon', 'shinchan'] as const).map(c => <button key={c} aria-pressed={c === character} onClick={() => { setCharacter(c); }}><span>{c === 'doraemon' ? 'Doraemon' : 'Shin Chan'}<small>{c === 'doraemon' ? 'Tu bolsillo del futuro' : 'Gustitos con cabeza'}</small></span></button>)}
       </div>
       <div className="companion-scroll">
         <p className="companion-eyebrow"><Sparkles size={13} /> CÁLCULO CON TUS DATOS</p>
@@ -66,8 +92,8 @@ export function FinancialCompanions() {
         {error && <p role="alert" className="companion-error">{error}</p>}
       </div>
       <form className="companion-form" onSubmit={e => { e.preventDefault(); void ask(question); }}><input ref={inputRef} aria-label={`Pregunta a ${name}`} maxLength={1200} placeholder="¿Cómo organizo mi dinero?" value={question} onChange={e => setQuestion(e.target.value)} /><button className="companion-icon" aria-label="Enviar pregunta" disabled={busy || !question.trim()}><Send size={18} /></button></form>
-      <footer className="companion-footer"><Link to="/ia" onClick={() => setOpen(false)}>Abrir chat completo</Link><button onClick={() => toggleHidden(true)}><X size={13} /> Ocultar mascotas</button></footer>
+      <footer className="companion-footer"><Link to="/ia" onClick={() => setOpen(false)}>Abrir chat completo</Link><button onClick={close}><X size={13} /> Ocultar mascotas</button></footer>
     </section>}
-    {!hidden ? <div className="companion-dock"><button className="companion-dock-label" aria-expanded={open} onClick={() => setOpen(v => !v)}><span className="companion-online" /> Tu equipo financiero <MessageCircle size={16} /></button><div className="companion-characters">{(['doraemon', 'shinchan'] as const).map(c => <CornerMascot key={c} character={c} expanded={open && character === c} mood={c === character && open ? (busy ? "thinking" : answer ? "talking" : "hello") : "hello"} onActivate={() => { setCharacter(c); setOpen(v => c === character ? !v : true); }} />)}</div></div> : <button className="companion-restore" onClick={() => toggleHidden(false)} aria-label="Mostrar mascotas financieras"><MessageCircle size={18} /> Compañeros</button>}
+
   </aside>;
 }
