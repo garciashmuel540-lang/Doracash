@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
+import { requestGemini } from '@/lib/gemini-request.server';
 
 const amount = z.number().finite().min(0).max(1e12);
 const inputSchema = z.object({
@@ -45,8 +46,8 @@ export const Route = createFileRoute('/api/chat-ia')({
         monto: contexto.deudaTarjetaManual.partidas.reduce((total, item) => total + item.monto, 0),
       } : null;
       const datos = { ...contexto, deudaTarjetaManual, libre, ahorroSugerido, reservaSugerida, gustosSugeridos: disponible - ahorroSugerido - reservaSugerida, tarjeta: contexto.tarjeta || null, fechaConsulta: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Managua' }).format(new Date()) };
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(25000),
+      const response = await requestGemini(`https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, signal: AbortSignal.any([request.signal, AbortSignal.timeout(25000)]),
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: `Eres el compañero financiero ${personaje === 'doraemon' ? 'Doraemon: cálido, prudente, organizado y atento al futuro' : 'Shin Chan: divertido y travieso, pero responsable con los gustitos y las deudas'}. Habla en español natural, claro y bien redactado, con un máximo orientativo de 250 palabras. Tu personalidad jamás justifica malgastar.
 Responde primero a la pregunta concreta y adapta el detalle a lo que se pide. Explica brevemente por qué recomiendas cada paso; evita saludos repetidos, relleno y repetir todas las cifras. Si hay información insuficiente, pide solo los datos que cambian la decisión. No inventes operaciones ni hechos.
@@ -65,7 +66,7 @@ Usa el día de corte y el vencimiento del mes siguiente aportados; no asumas que
       if (!response.ok) {
         const failure = await response.json().catch(() => null);
         console.error('[chat-ia] Proveedor no disponible', { status: response.status, code: failure?.error?.status });
-        return json({ ok: false, error: response.status === 429 ? 'Gemini alcanzó su límite de uso. Revisa la cuota de la IA o inténtalo más tarde.' : response.status === 404 ? 'El modelo de Gemini configurado no está disponible.' : response.status === 400 || response.status === 401 || response.status === 403 ? 'Gemini rechazó la configuración de acceso. Revisa la clave y los permisos de la IA.' : 'La IA no pudo responder. Inténtalo de nuevo más tarde.' }, 503);
+        return json({ ok: false, error: response.status === 503 ? 'Gemini está temporalmente ocupado. Tu pregunta sigue aquí; inténtalo de nuevo en un momento.' : response.status === 429 ? 'Gemini alcanzó su límite de uso. Revisa la cuota de la IA o inténtalo más tarde.' : response.status === 404 ? 'El modelo de Gemini configurado no está disponible.' : response.status === 400 || response.status === 401 || response.status === 403 ? 'Gemini rechazó la configuración de acceso. Revisa la clave y los permisos de la IA.' : 'La IA no pudo responder. Inténtalo de nuevo más tarde.' }, 503);
       }
       const data = await response.json();
       const respuesta = data.candidates?.[0]?.content?.parts?.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought).map((p: { text: string }) => p.text).join('\n').trim();
