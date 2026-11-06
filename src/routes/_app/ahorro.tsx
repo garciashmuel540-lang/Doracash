@@ -34,7 +34,7 @@ function AhorroPage() {
   const totalAhorrado = inAccounts + savingsInPeriod;
 
   return (
-    <div className="pb-24">
+    <div>
       <PageHeader
         title="Ahorro"
         lede="Aquí guardas el dinero que no vas a gastar."
@@ -66,13 +66,13 @@ function AhorroPage() {
       </div>
 
       {goals.length === 0 ? (
-        <p className="text-sm text-muted bg-surface-2 p-4 rounded-lg">
-          Agrega una cuenta (como Cajita LAFISE o BAC) para empezar a trackear tu dinero guardado.
+        <p className="card text-sm text-muted p-6">
+          Tu próximo paso empieza aquí. Agrega una cuenta, como Cajita LAFISE o BAC, para seguir tus ahorros.
         </p>
       ) : (
         <div className="flex flex-col gap-4">
           {goals.map((account) => (
-            <div key={account.id} className="rounded-xl border border-line bg-surface p-4">
+            <div key={account.id} className="card p-5">
               <div className="flex justify-between items-start gap-3 mb-3">
                 <h3 className="min-w-0 break-words font-medium text-lg">{account.name}</h3>
                 <button aria-label={`Eliminar cuenta ${account.name}`} onClick={() => removeGoal(account.id)} className="shrink-0 text-bad min-h-11 min-w-11 grid place-items-center">

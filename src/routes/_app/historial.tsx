@@ -14,14 +14,14 @@ function HistorialPage() {
   const closedPeriods = periods.filter((p) => p && p.status === "closed");
 
   return (
-    <div className="pb-24">
+    <div>
       <PageHeader
         title="Historial"
         lede="Tus quincenas anteriores."
       />
 
       {closedPeriods.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-line bg-surface p-6 text-center">
+        <div className="card mt-8 p-8 text-center">
           <p className="text-muted text-sm">
             Aún no tienes quincenas cerradas. Cuando cierres una, aparecerá aquí.
           </p>
@@ -34,7 +34,7 @@ function HistorialPage() {
             const surplus = period.categories ? periodSurplus(period) : 0;
             
             return (
-              <div key={period.id} className="rounded-xl border border-line bg-surface p-4">
+              <div key={period.id} className="card p-5">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="font-medium">
                     {new Date(period.start).toLocaleDateString()} - {new Date(period.end).toLocaleDateString()}

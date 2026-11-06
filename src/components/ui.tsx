@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { formatPlain, parseMoney } from "@/lib/finance";
 
 const buttonStyles = cva(
-  "inline-flex min-h-11 max-w-full whitespace-normal py-2 text-center items-center justify-center gap-2 rounded-full px-5 text-sm font-medium transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-40",
+  "liquid-button inline-flex min-h-11 max-w-full whitespace-normal py-2 text-center items-center justify-center gap-2 rounded-full px-5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40",
   {
     variants: {
       variant: {
@@ -34,6 +34,7 @@ export function Button({
   return (
     <button
       type={type ?? "button"}
+      data-variant={variant ?? "primary"}
       className={cn(buttonStyles({ variant, full }), className)}
       {...props}
     />
@@ -51,7 +52,7 @@ export function IconButton({
       type="button"
       aria-label={label}
       className={cn(
-        "grid size-11 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-fg",
+        "liquid-icon grid size-11 shrink-0 place-items-center rounded-full text-muted hover:text-fg",
         className,
       )}
       {...props}

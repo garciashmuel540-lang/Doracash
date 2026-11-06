@@ -9,6 +9,8 @@ import { CornerMascot } from './roaming-mascot';
 
 import { useCardContext, saveCardContext } from '@/lib/use-card-context';
 import { cardContextFromHash, CARD_CONTEXT_LIMIT } from '@/lib/card-context';
+import { AdvisorMessage } from './advisor-message';
+import { recentChatHistory, type ChatTurn } from '@/lib/chat-history';
 
 type Character = 'doraemon' | 'shinchan';
 export function FinancialCompanions() {
@@ -30,6 +32,7 @@ export function FinancialCompanions() {
   const [answer, setAnswer] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const history = useRef<ChatTurn[]>([]);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     function importCard() {
@@ -65,7 +68,7 @@ export function FinancialCompanions() {
     }, 3000);
     return () => window.clearTimeout(timer);
   }, [adviceKey, open, visible]);
-  useEffect(() => { controller.current?.abort(); setBusy(false); setAnswer(''); setError(''); }, [fingerprint, character]);
+  useEffect(() => { controller.current?.abort(); controller.current = null; history.current = []; setBusy(false); setAnswer(''); setError(''); }, [fingerprint, character]);
   useEffect(() => () => controller.current?.abort(), []);
   const toggleRef = useRef<HTMLButtonElement>(null);
   function close() { setOpen(false); setNotice(null); toggleRef.current?.focus(); }
@@ -75,17 +78,19 @@ export function FinancialCompanions() {
     setOpen(value => !value);
   }
   async function ask(message: string) {
-    if (busy || !message.trim()) return;
+    if (controller.current || !message.trim()) return;
     const abort = new AbortController(); controller.current = abort;
     setBusy(true); setError(''); setAnswer('');
     try {
       const res = await fetch('/api/chat-ia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: abort.signal,
-        body: JSON.stringify({ mensaje: message, contexto: context, personaje: character }) });
+        body: JSON.stringify({ mensaje: message, contexto: context, personaje: character, historial: recentChatHistory(history.current) }) });
       const result = await res.json();
       if (!res.ok || !result.ok) throw new Error(result.error || 'La IA no está disponible. Inténtalo de nuevo.');
+      if (abort.signal.aborted) return;
+      history.current = recentChatHistory([...history.current, { role: 'user', text: message }, { role: 'model', text: result.respuesta }]);
       setAnswer(result.respuesta); setQuestion('');
     } catch (e) { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : 'No se pudo conectar con la IA.'); }
-    finally { if (!abort.signal.aborted) setBusy(false); }
+    finally { if (controller.current === abort) controller.current = null; if (!abort.signal.aborted) setBusy(false); }
   }
   const name = character === 'doraemon' ? 'Doraemon' : 'Shin Chan';
   return <aside className="companions" data-active={open || showingNotice} onKeyDown={e => { if (e.key === 'Escape') close(); }} data-motion={visible ? "playing" : "paused"} aria-label="Compañeros financieros">
@@ -121,7 +126,7 @@ export function FinancialCompanions() {
         {cardStatus && <p className="companion-note" role="status">{cardStatus}</p>}
         {(tarjeta || context.deudaTarjetaManual) && <button className="companion-primary" disabled={busy} onClick={() => ask('Revisa los datos de mi tarjeta y explícame corte, vencimiento, retiro y tasas. Distingue el saldo reportado del pago de contado y dime qué falta confirmar antes de comprar.')}>Consultar mi tarjeta</button>}
         <button className="companion-primary" disabled={busy || !context.hayQuincena || context.ingreso <= 0} onClick={() => ask('Analiza mi quincena y dame tres recomendaciones concretas de ahorro, gastos y gustitos. Usa los cálculos y explica qué datos faltan.')}><Sparkles size={16} />{busy ? 'Consultando la IA…' : 'Pedir consejo a la IA'}</button>
-        {answer && <div className="companion-answer" role="status"><strong>{name}</strong><p>{answer}</p></div>}
+        {answer && <div className="companion-answer" role="status"><strong>{name}</strong><AdvisorMessage text={answer} /></div>}
         {error && <p role="alert" className="companion-error">{error}</p>}
       </div>
       <form className="companion-form" onSubmit={e => { e.preventDefault(); void ask(question); }}><input ref={inputRef} aria-label={`Pregunta a ${name}`} maxLength={1200} placeholder="¿Cómo organizo mi dinero?" value={question} onChange={e => setQuestion(e.target.value)} /><button className="companion-icon" aria-label="Enviar pregunta" disabled={busy || !question.trim()}><Send size={18} /></button></form>
