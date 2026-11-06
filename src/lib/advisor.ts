@@ -1,6 +1,6 @@
 import { categoryTotal, type Goal, type Period } from './finance.ts';
 
-export function advisorContext(period: Period | undefined, goals: Goal[]) {
+export function advisorContext(period: Period | undefined, goals: Goal[], tarjeta: string | null = null) {
   const money = (n: number | undefined) => Number.isFinite(n) ? Math.max(0, n!) : 0;
   const sum = (role: string) => period?.categories.reduce((total, c) => total + c.items.reduce((s, item) => s + ((item.roleOverride ?? c.role) === role ? money(item.amount) : 0), 0), 0) ?? 0;
   const ingreso = money(period?.income);
@@ -18,7 +18,7 @@ export function advisorContext(period: Period | undefined, goals: Goal[]) {
     metas: goals.map(g => ({ nombre: g.name, ahorrado: money(g.saved), objetivo: money(g.target) })),
     rubros: period?.categories.map(c => ({ nombre: c.name, tipo: c.role, monto: categoryTotal(c) })) ?? [],
     inicio: period?.start ?? null, fin: period?.end ?? null,
-    tarjeta: null,
+    tarjeta,
   };
 }
 export type AdvisorContext = ReturnType<typeof advisorContext>;

@@ -9,6 +9,8 @@ export const Route = createFileRoute("/_app/ia")({
   component: IAChatPage,
 });
 
+import { useCardContext } from "@/lib/use-card-context";
+
 type Message = { role: "user" | "ia"; text: string };
 
 function IAChatPage() {
@@ -20,6 +22,7 @@ function IAChatPage() {
   const [cargando, setCargando] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   
+  const tarjeta = useCardContext();
   const data = useFinance((s) => s);
   const period = openPeriod(data);
 
@@ -36,7 +39,7 @@ function IAChatPage() {
     setCargando(true);
 
     // Preparamos los datos reales para la IA
-    const contexto = advisorContext(period, data.goals);
+    const contexto = advisorContext(period, data.goals, tarjeta || null);
 
     try {
       const res = await fetch("/api/chat-ia", {
