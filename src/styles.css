@@ -259,28 +259,37 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .companion-form input { width: 100%; min-width: 0; padding: 12px; font-size: 16px; background: transparent; outline: none; }
 .companion-footer { display: flex; justify-content: space-between; padding: 6px 16px; gap: 8px; }
 .companion-footer a, .companion-footer button { display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 10px; color: var(--muted); }
-/* Sculpted CSS miniatures: no WebGL context, video or animation loop. */
-.mascot-avatar { position: relative; display: inline-block; width: 76px; height: 96px; vertical-align: middle; filter: drop-shadow(0 7px 5px #0003); isolation: isolate; }
-.mascot-head { position: absolute; z-index: 3; top: 3px; left: 7px; width: 62px; height: 58px; border-radius: 48%; background: radial-gradient(circle at 28% 18%, #7be1ff, #009ddd 45%, #00689e 90%); box-shadow: inset -4px -5px 7px #003c6550, inset 2px 2px 3px #fff8; }
-.mascot-face { position: absolute; inset: 13px 5px 3px; border-radius: 48%; background: radial-gradient(circle at 35% 20%, #fff, #e4f0f8 70%, #abc7df); }
-.mascot-body { position: absolute; z-index: 1; top: 51px; left: 14px; width: 48px; height: 36px; border-radius: 18px 18px 13px 13px; background: radial-gradient(circle at 30% 20%, #62dbff, #008fce 65%, #00639d); box-shadow: inset -4px -4px 4px #00497455; border-bottom: 6px solid #eaf5ff; }
-.doraemon .mascot-body::before { content: ''; position: absolute; inset: 3px 8px 1px; background: radial-gradient(circle at 30% 10%, #fff, #daeafa); border-radius: 50%; }
-.doraemon .mascot-body::after { content: ''; position: absolute; left: 13px; top: 11px; width: 22px; height: 12px; border: 1px solid #7cacc4; border-radius: 0 0 15px 15px; }
-.mascot-eye { position: absolute; z-index: 2; top: 9px; width: 15px; height: 20px; background: #fff; border: 1px solid #536c7d; border-radius: 50%; }
-.mascot-eye.left { left: 16px; }.mascot-eye.right { right: 16px; }
-.mascot-eye::after { content: ''; position: absolute; top: 7px; width: 4px; height: 7px; background: #122637; border-radius: 50%; }
-.mascot-eye.left::after { right: 2px; }.mascot-eye.right::after { left: 2px; }
-.mascot-nose { position: absolute; z-index: 4; left: 26px; top: 26px; width: 11px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #ffc2bb, #ed3549 55%, #ae132d); }
-.mascot-mouth { position: absolute; left: 18px; top: 35px; width: 28px; height: 14px; border-bottom: 2px solid #324f68; border-radius: 50%; }
-.mascot-whiskers { position: absolute; top: 35px; width: 17px; height: 1px; background: #43637d; box-shadow: 0 -5px #43637d, 0 5px #43637d; }.mascot-whiskers.left { left: 6px; transform: rotate(8deg); }.mascot-whiskers.right { right: 6px; transform: rotate(-8deg); }
-.mascot-bell { position: absolute; z-index: 4; top: 58px; left: 33px; width: 11px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 25% 20%, #fff3a6, #ffc738 55%, #c78511); border-bottom: 2px solid #ae7116; }
-.mascot-bell::before { content: ''; position: absolute; top: -3px; left: -16px; width: 42px; height: 5px; border-radius: 4px; background: #e24252; z-index: -1; }
-.mascot-hand { position: absolute; z-index: 2; width: 14px; height: 16px; top: 60px; border-radius: 50%; background: radial-gradient(circle at 30% 20%, #fff, #c9e0f4); }.mascot-hand.left { left: 6px; transform: rotate(25deg); }.mascot-hand.right { right: 6px; transform: rotate(-25deg); }
-.shinchan .mascot-head { top: 8px; left: 6px; width: 65px; height: 52px; border-radius: 40% 42% 45% 48%; background: radial-gradient(circle at 32% 25%, #ffe7c8, #f5bc8d 65%, #d99365); box-shadow: inset -4px -4px 6px #a6603930, inset 2px 2px 4px #fff7; border-top: 10px solid #20232b; }
-.shinchan .mascot-face { display: none; }.shinchan .mascot-eye { top: 16px; width: 6px; height: 8px; background: #20232b; border: 0; }.shinchan .mascot-eye::after { display: none; }.shinchan .mascot-eye.left { left: 17px; }.shinchan .mascot-eye.right { right: 17px; }
-.shinchan .mascot-brow { position: absolute; top: 6px; height: 7px; width: 19px; border-radius: 60% 60% 20% 20%; background: #20232b; }.shinchan .mascot-brow.left { left: 9px; transform: rotate(-12deg); }.shinchan .mascot-brow.right { right: 9px; transform: rotate(12deg); }
-.shinchan .mascot-nose { width: 7px; height: 5px; left: 29px; top: 25px; background: #d99365; }.shinchan .mascot-mouth { left: 25px; top: 31px; width: 15px; height: 6px; border-color: #974a3c; }
-.shinchan .mascot-body { top: 56px; left: 15px; width: 46px; height: 33px; background: radial-gradient(circle at 30% 15%, #ff9291, #ef4b57 60%, #b82e43); border-bottom: 10px solid #ffd15a; border-radius: 11px 11px 8px 8px; }.shinchan .mascot-bell { display: none; }.shinchan .mascot-hand { background: radial-gradient(circle at 30% 20%, #ffe9c9, #efb283); }
+/* Generated 3D sprite atlas: one shared lightweight texture for both companions. */
+.mascot-avatar { position: relative; display: inline-block; width: 76px; height: 96px; vertical-align: middle; }
+.mascot-sprite { position: absolute; inset: 0; background-image: url('/mascots/companions.webp'); background-size: 400% 400%; background-position: 0 0; background-repeat: no-repeat; }
+.shinchan .mascot-sprite { background-position: 0 calc(66.6667% + 4px); }
+.mascot-animated .mascot-sprite { animation: dora-greet 8s step-end infinite; }
+.mascot-animated.shinchan .mascot-sprite { animation: shin-greet 9s step-end infinite; }
+.mascot-animated { animation: pet-breathe 3.2s ease-in-out infinite; }
+.mascot-animated[data-mood="thinking"] { animation: pet-think 2s ease-in-out infinite; }
+.mascot-animated[data-mood="talking"] { animation: pet-happy .8s ease-in-out 5; }
+.companion-characters { display: contents; }
+.companion-characters > .roaming-pet { position: fixed; left: auto; top: auto; right: 20px; bottom: 150px; width: 96px; height: 110px; padding: 0; touch-action: none; cursor: grab; transition: transform 2.4s ease-in-out; border-radius: 28px; z-index: 36; }
+.companion-characters > .roaming-pet:first-child { right: 120px; }
+.companion-characters > .roaming-pet.is-dragging { transition: none; cursor: grabbing; z-index: 38; }
+.roaming-pet .mascot-avatar { width: 96px; height: 104px; transform: none !important; }
+.roaming-pet:focus-visible { outline: 2px solid var(--gold); }
+.mascot-greeting { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--glass-panel); color: var(--fg); border: 1px solid var(--line); padding: 7px 10px; border-radius: 12px 12px 3px 12px; font-size: 11px; max-width: 130px; width: max-content; pointer-events: none; opacity: 0; }
+.roaming-pet:hover .mascot-greeting, .roaming-pet:focus-visible .mascot-greeting { opacity: 1; }
+.companion-motion-toggle { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 50%; background: var(--glass-panel); color: var(--muted); }
+.companions[data-motion="paused"] .mascot-avatar, .companions[data-motion="paused"] .mascot-avatar * { animation-play-state: paused !important; }
+@keyframes dora-greet {
+  0%,100% { background-position: 0 0; } 3% { background-position: 33.3333% 0; } 6%,12% { background-position: 66.6667% 0; } 9%,15% { background-position: 100% 0; }
+  18% { background-position: 0 calc(33.3333% + 2px); } 23% { background-position: 33.3333% calc(33.3333% + 2px); } 28%,60% { background-position: 0 0; } 62% { background-position: 66.6667% calc(33.3333% + 2px); } 64%,85% { background-position: 100% calc(33.3333% + 2px); } 89% { background-position: 0 0; }
+}
+@keyframes shin-greet {
+  0%,100% { background-position: 0 calc(66.6667% + 4px); } 4% { background-position: 33.3333% calc(66.6667% + 4px); } 8%,16% { background-position: 66.6667% calc(66.6667% + 4px); } 12%,20% { background-position: 100% calc(66.6667% + 4px); }
+  24% { background-position: 0 calc(100% + 4px); } 29% { background-position: 33.3333% calc(100% + 4px); } 34%,60% { background-position: 0 calc(66.6667% + 4px); } 62% { background-position: 66.6667% calc(100% + 4px); } 65%,85% { background-position: 100% calc(100% + 4px); } 89% { background-position: 0 calc(66.6667% + 4px); }
+}
+@keyframes pet-breathe { 0%,100% { translate: 0 0; } 50% { translate: 0 -3px; } }
+@keyframes pet-think { 0%,100% { rotate: -3deg; } 50% { rotate: 3deg; } }
+@keyframes pet-happy { 0%,100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+@media (prefers-reduced-motion: reduce) { .mascot-avatar, .mascot-avatar * { animation: none !important; } .companion-characters > .roaming-pet { transition: none; } }
 @keyframes companion-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 767px) {
   .companions { bottom: calc(106px + env(safe-area-inset-bottom)); right: 12px; }
@@ -300,3 +309,6 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); letter-spacing: -.035
 .world-banner div > span { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
 .world-banner-mark { width: 5px; height: 34px; border-radius: 4px; background: var(--gold-fill); box-shadow: 8px 0 0 -1px var(--companion-red); margin-right: 8px; }
 .world-banner-dot { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 30% 20%, #fff1ab, #ffd166 55%, #d49224); box-shadow: 0 4px 12px #ffd16625; }
+
+.companion-panel { position: relative; z-index: 40; }
+.companions[data-motion="paused"] .roaming-pet { transition: none; }
