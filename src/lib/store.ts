@@ -12,6 +12,7 @@ import {
   type Goal,
   type GoalKind,
   type LineItem,
+  type MoneyLocation,
   type Period,
   type Role,
 } from "./finance";
@@ -32,6 +33,7 @@ type Store = {
   addCategory: (name: string, role: Role) => string | null;
   renameCategory: (categoryId: string, name: string) => void;
   setCategoryRole: (categoryId: string, role: Role) => void;
+  setCategoryMoneyLocation: (categoryId: string, moneyLocation: MoneyLocation) => void;
   removeCategory: (categoryId: string) => void;
   savePlan: (setAside: number, contributions: Contribution[]) => void;
   addGoal: (input: { name: string; target: number; saved: number; kind: GoalKind }) => void;
@@ -178,6 +180,16 @@ export const useFinance = create<Store>()(
           mapOpen(state, (period) => ({
             ...period,
             categories: period.categories.map((c) => (c.id === categoryId ? { ...c, role } : c)),
+          }))
+        ),
+
+      setCategoryMoneyLocation: (categoryId, moneyLocation) =>
+        set((state) =>
+          mapOpen(state, (period) => ({
+            ...period,
+            categories: period.categories.map((category) =>
+              category.id === categoryId ? { ...category, moneyLocation } : category
+            ),
           }))
         ),
 

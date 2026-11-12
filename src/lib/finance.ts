@@ -1,4 +1,5 @@
 export type Role = "need" | "life" | "debt";
+export type MoneyLocation = "account" | "cash";
 export type GoalKind = "emergency" | "custom";
 
 export type LineItem = {
@@ -14,6 +15,7 @@ export type Category = {
   name: string;
   role: Role;
   tone: number;
+  moneyLocation?: MoneyLocation;
   items: LineItem[];
 };
 
@@ -202,7 +204,16 @@ export function daysLabel(days: number) {
 }
 
 export function categoryTotal(category: Category) {
-  return category.items.reduce((sum, item) => sum + item.amount, 0);
+  return category.items.reduce((sum, item) => sum + Number(item.amount), 0);
+}
+
+export function periodMoneyLocations(period: Pick<Period, "categories">): Record<MoneyLocation, number> {
+  const totals = { account: 0, cash: 0 };
+  for (const category of period.categories) {
+    const location = category.moneyLocation === "cash" ? "cash" : "account";
+    totals[location] += categoryTotal(category);
+  }
+  return totals;
 }
 
 export function periodExpenses(period: Period) {
@@ -516,6 +527,7 @@ export function sanitizeData(raw: unknown): Data | null {
           id: readText(category.id, uid("cat"), 40),
           name: readText(category.name, "Rubro", 40),
           role,
+          moneyLocation: category.moneyLocation === "cash" ? "cash" : "account",
           tone: Number.isInteger(category.tone) ? Number(category.tone) % 6 : index % 6,
           items,
         });

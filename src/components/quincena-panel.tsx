@@ -1,3 +1,4 @@
+import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import {
   formatMoney,
   formatRange,
   periodExpenses,
+  periodMoneyLocations,
   periodSurplus,
   ratePhrase,
   rateTone,
@@ -26,6 +28,7 @@ export function QuincenaPanel() {
   const setIncome = useFinance((state) => state.setIncome);
   const setItemRole = useFinance((state) => state.setItemRole);
   const setCategoryRole = useFinance((state) => state.setCategoryRole);
+  const setCategoryMoneyLocation = useFinance((state) => state.setCategoryMoneyLocation);
   const renameItem = useFinance((state) => state.renameItem);
   const addItem = useFinance((state) => state.addItem);
   const removeItem = useFinance((state) => state.removeItem);
@@ -63,6 +66,7 @@ export function QuincenaPanel() {
 
   const expenses = periodExpenses(period);
   const surplus = periodSurplus(period);
+  const { cash, account } = periodMoneyLocations(period);
   const rate = savingsRate(period);
   const tone = rateTone(rate);
   const safeEnd = (period.end && !isNaN(new Date(period.end).getTime())) 
@@ -114,6 +118,26 @@ export function QuincenaPanel() {
         </Button>
       </div>
 
+      <dl
+        aria-label="Distribución del dinero de tus rubros"
+        aria-live="polite"
+        aria-atomic="true"
+        className="card mt-4 grid grid-cols-2 divide-x divide-line py-3"
+      >
+        <div className="min-w-0 px-4">
+          <dt className="text-sm text-muted">Efectivo a retirar</dt>
+          <dd className="mt-1 break-words font-display text-xl tabular-nums text-gold">
+            {formatMoney(cash)}
+          </dd>
+        </div>
+        <div className="min-w-0 px-4">
+          <dt className="text-sm text-muted">En cuenta</dt>
+          <dd className="mt-1 break-words font-display text-xl tabular-nums">
+            {formatMoney(account)}
+          </dd>
+        </div>
+      </dl>
+
       <div className="mt-4 flex flex-col gap-4">
         {period.categories.map((category) => {
           const total = categoryTotal(category);
@@ -122,6 +146,22 @@ export function QuincenaPanel() {
           
           return (
             <div key={category.id} className="category-card card overflow-hidden">
+              <RadioGroup.Root
+                aria-label={`Dónde dejar el dinero de ${category.name}`}
+                orientation="horizontal"
+                value={category.moneyLocation === "cash" ? "cash" : "account"}
+                onValueChange={(value) =>
+                  setCategoryMoneyLocation(category.id, value === "cash" ? "cash" : "account")
+                }
+                className="mx-4 mt-3 grid max-w-xs grid-cols-2 gap-1 rounded-full border border-line bg-surface-2 p-1"
+              >
+                <RadioGroup.Item value="account" className="money-location-option">
+                  Cuenta
+                </RadioGroup.Item>
+                <RadioGroup.Item value="cash" className="money-location-option">
+                  Efectivo
+                </RadioGroup.Item>
+              </RadioGroup.Root>
               <div className="category-heading flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="flex min-w-0 flex-1 basis-40 flex-col gap-1">
                   <div className="flex items-center gap-2">

@@ -391,6 +391,16 @@ button:not(.corner-pet), .nav-item {
 .category-heading > div:first-child > div:last-child { margin-left: 20px; gap: 4px; }
 .category-heading > div:first-child > div:last-child button { border-radius: 99px; min-height: 44px; }
 .category-heading > div:last-child button { font-size: 1.25rem; padding: 12px 16px; }
+.money-location-option {
+  min-height: 44px;
+  padding-inline: 8px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .875rem;
+  font-weight: 600;
+}
+.money-location-option[data-state="checked"] { background: var(--gold-fill); color: var(--gold-ink); }
+.money-location-option:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .category-content { animation: detail-enter 200ms var(--ease-glass); }
 .page-content { animation: page-enter 280ms var(--ease-glass); }
 .skip-link { position: fixed; left: 16px; top: -100px; padding: 12px 16px; z-index: 100; border-radius: 1rem; color: var(--gold-ink); background: var(--gold-fill); }
