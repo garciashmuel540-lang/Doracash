@@ -13,7 +13,7 @@ import {
   formatMoney,
   formatRange,
   periodExpenses,
-  periodMoneyLocations,
+  pendingMoneyLocations,
   periodSurplus,
   ratePhrase,
   rateTone,
@@ -67,7 +67,7 @@ export function QuincenaPanel() {
 
   const expenses = periodExpenses(period);
   const surplus = periodSurplus(period);
-  const { cash, account } = periodMoneyLocations(period);
+  const { cash, account } = pendingMoneyLocations(period);
   const rate = savingsRate(period);
   const tone = rateTone(rate);
   const safeEnd = (period.end && !isNaN(new Date(period.end).getTime())) 
@@ -120,7 +120,7 @@ export function QuincenaPanel() {
       </div>
 
       <dl
-        aria-label="Distribución del dinero de tus rubros"
+        aria-label="Distribución del dinero de tus rubros pendientes"
         aria-live="polite"
         aria-atomic="true"
         className="card mt-4 grid grid-cols-2 divide-x divide-line py-3"
@@ -132,7 +132,7 @@ export function QuincenaPanel() {
           </dd>
         </div>
         <div className="min-w-0 px-4">
-          <dt className="text-sm text-muted">En cuenta</dt>
+          <dt className="text-sm text-muted">Pendiente en cuenta</dt>
           <dd className="mt-1 break-words font-display text-xl tabular-nums">
             {formatMoney(account)}
           </dd>

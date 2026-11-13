@@ -217,9 +217,10 @@ export function categoryTotal(category: Category) {
   return roundMoney(category.items.reduce((sum, item) => sum + Number(item.amount), 0));
 }
 
-export function periodMoneyLocations(period: Pick<Period, "categories">): Record<MoneyLocation, number> {
+export function pendingMoneyLocations(period: Pick<Period, "categories">): Record<MoneyLocation, number> {
   const totals = { account: 0, cash: 0 };
   for (const category of period.categories) {
+    if (category.paid === true) continue;
     const location = category.moneyLocation === "cash" ? "cash" : "account";
     totals[location] = roundMoney(totals[location] + categoryTotal(category));
   }
