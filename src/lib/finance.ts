@@ -99,25 +99,34 @@ export function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`;
 }
 
+const MONEY_SCALE = 1_000;
+const moneyFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 });
+
+function roundMoney(n: number) {
+  return Math.round(n * MONEY_SCALE) / MONEY_SCALE;
+}
+
 export function clampMoney(n: number) {
   if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.min(100_000_000, Math.round(n)));
+  return roundMoney(Math.max(0, Math.min(100_000_000, n)));
 }
 
 export function parseMoney(raw: string) {
-  const digits = raw.replace(/[^\d]/g, "");
-  if (!digits) return 0;
-  return clampMoney(Number(digits));
+  const value = raw.trim().replace(/^C\$\s*/i, "");
+  const normalized = /^\d{1,3}(,\d{3})+(\.\d*)?$/.test(value)
+    ? value.replaceAll(",", "")
+    : value.replace(",", ".");
+  return /^\d*(\.\d*)?$/.test(normalized) ? clampMoney(Number(normalized)) : 0;
 }
 
 export function formatPlain(n: number) {
-  return clampMoney(n).toLocaleString("en-US");
+  return String(clampMoney(n));
 }
 
 export function formatMoney(n: number) {
-  const v = Math.round(Number.isFinite(n) ? n : 0);
-  const abs = Math.abs(v).toLocaleString("en-US");
-  return v < 0 ? `−C$${abs}` : `C$${abs}`;
+  const value = roundMoney(Number.isFinite(n) ? n : 0);
+  const abs = moneyFormatter.format(Math.abs(value));
+  return value < 0 ? `−C$${abs}` : `C$${abs}`;
 }
 
 export function managuaParts() {
@@ -205,24 +214,24 @@ export function daysLabel(days: number) {
 }
 
 export function categoryTotal(category: Category) {
-  return category.items.reduce((sum, item) => sum + Number(item.amount), 0);
+  return roundMoney(category.items.reduce((sum, item) => sum + Number(item.amount), 0));
 }
 
 export function periodMoneyLocations(period: Pick<Period, "categories">): Record<MoneyLocation, number> {
   const totals = { account: 0, cash: 0 };
   for (const category of period.categories) {
     const location = category.moneyLocation === "cash" ? "cash" : "account";
-    totals[location] += categoryTotal(category);
+    totals[location] = roundMoney(totals[location] + categoryTotal(category));
   }
   return totals;
 }
 
 export function periodExpenses(period: Period) {
-  return roleAmount(period, 'need') + roleAmount(period, 'debt');
+  return roundMoney(roleAmount(period, 'need') + roleAmount(period, 'debt'));
 }
 
 export function periodSurplus(period: Period) {
-  return period.income - periodExpenses(period) - roleAmount(period, 'life') - (period.setAside || 0);
+  return roundMoney(period.income - periodExpenses(period) - roleAmount(period, 'life') - (period.setAside || 0));
 }
 
 export function savingsRate(period: Period) {
@@ -281,10 +290,10 @@ export function suggestAllocation(aside: number, goals: Goal[]) {
   });
   const contributions: Contribution[] = [];
   for (const goal of ordered) {
-    const room = Math.max(0, goal.target - goal.saved);
+    const room = Math.max(0, roundMoney(goal.target - goal.saved));
     const amount = Math.min(left, room);
     if (amount > 0) contributions.push({ goalId: goal.id, amount });
-    left -= amount;
+    left = roundMoney(left - amount);
     if (left <= 0) break;
   }
   return contributions;
@@ -302,16 +311,17 @@ export function normalizePlan(
     .filter((item) => goalIds.has(item.goalId))
     .map((item) => ({ goalId: item.goalId, amount: clampMoney(item.amount) }))
     .filter((item) => item.amount > 0);
-  const sum = cleaned.reduce((total, item) => total + item.amount, 0);
+  const sum = roundMoney(cleaned.reduce((total, item) => total + item.amount, 0));
   if (sum <= nextAside) return { setAside: nextAside, contributions: cleaned };
   if (sum <= 0 || nextAside <= 0) return { setAside: nextAside, contributions: [] };
-  let left = nextAside;
+  const asideUnits = Math.round(nextAside * MONEY_SCALE);
+  let left = asideUnits;
   const scaled = cleaned
     .map((item, index) => {
-      if (index === cleaned.length - 1) return { ...item, amount: Math.max(0, left) };
-      const amount = Math.floor((item.amount / sum) * nextAside);
+      if (index === cleaned.length - 1) return { ...item, amount: left / MONEY_SCALE };
+      const amount = Math.floor((item.amount / sum) * asideUnits);
       left -= amount;
-      return { ...item, amount };
+      return { ...item, amount: amount / MONEY_SCALE };
     })
     .filter((item) => item.amount > 0);
   return { setAside: nextAside, contributions: scaled };

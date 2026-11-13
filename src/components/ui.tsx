@@ -89,7 +89,7 @@ export function MoneyField({
       </span>
       <input
         id={id}
-        inputMode="numeric"
+        inputMode="decimal"
         autoComplete="off"
         aria-label={label}
         className={cn(
@@ -99,9 +99,13 @@ export function MoneyField({
         value={shown}
         onFocus={(event) => event.currentTarget.select()}
         onChange={(event) => {
-          const digits = event.target.value.replace(/[^\d]/g, "");
-          setDraft(digits);
-          onChange(parseMoney(digits));
+          const raw = event.target.value.trim().replace(/^C\$\s*/i, "");
+          const normalized = /^\d{1,3}(,\d{3})+\.\d*$/.test(raw)
+            ? raw.replaceAll(",", "")
+            : raw.replace(",", ".");
+          if (!/^\d*(\.\d{0,3})?$/.test(normalized)) return;
+          setDraft(normalized);
+          onChange(parseMoney(normalized));
         }}
         onBlur={() => setDraft(null)}
       />
