@@ -34,6 +34,7 @@ type Store = {
   renameCategory: (categoryId: string, name: string) => void;
   setCategoryRole: (categoryId: string, role: Role) => void;
   setCategoryMoneyLocation: (categoryId: string, moneyLocation: MoneyLocation) => void;
+  setCategoryPaid: (categoryId: string, paid: boolean) => void;
   removeCategory: (categoryId: string) => void;
   savePlan: (setAside: number, contributions: Contribution[]) => void;
   addGoal: (input: { name: string; target: number; saved: number; kind: GoalKind }) => void;
@@ -193,6 +194,16 @@ export const useFinance = create<Store>()(
           }))
         ),
 
+      setCategoryPaid: (categoryId, paid) =>
+        set((state) =>
+          mapOpen(state, (period) => ({
+            ...period,
+            categories: period.categories.map((category) =>
+              category.id === categoryId ? { ...category, paid } : category
+            ),
+          }))
+        ),
+
       removeCategory: (categoryId) =>
         set((state) =>
           mapOpen(state, (period) => ({
@@ -251,7 +262,7 @@ export const useFinance = create<Store>()(
         set((state) => {
           const range = currentQuincena();
           const lastClosed = state.periods.find((p) => p.status === 'closed');
-          const defaultCategories: Category[] = lastClosed ? lastClosed.categories : [
+          const defaultCategories: Category[] = lastClosed ? lastClosed.categories.map((category) => ({ ...category, paid: false })) : [
             { id: uid('cat'), name: 'Gastos del hogar', role: 'need', tone: 0, items: [] },
             { id: uid('cat'), name: 'Transporte', role: 'need', tone: 1, items: [] },
             { id: uid('cat'), name: 'Internet', role: 'need', tone: 2, items: [] },

@@ -16,6 +16,7 @@ export type Category = {
   role: Role;
   tone: number;
   moneyLocation?: MoneyLocation;
+  paid?: boolean;
   items: LineItem[];
 };
 
@@ -320,6 +321,7 @@ export function cloneCategories(categories: Category[]): Category[] {
   return categories.map((category) => ({
     ...category,
     id: uid("cat"),
+    paid: false,
     items: category.items.map((item) => ({ ...item, id: uid("item") })),
   }));
 }
@@ -528,6 +530,7 @@ export function sanitizeData(raw: unknown): Data | null {
           name: readText(category.name, "Rubro", 40),
           role,
           moneyLocation: category.moneyLocation === "cash" ? "cash" : "account",
+          paid: category.paid === true,
           tone: Number.isInteger(category.tone) ? Number(category.tone) % 6 : index % 6,
           items,
         });

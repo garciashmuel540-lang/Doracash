@@ -29,6 +29,7 @@ export function QuincenaPanel() {
   const setItemRole = useFinance((state) => state.setItemRole);
   const setCategoryRole = useFinance((state) => state.setCategoryRole);
   const setCategoryMoneyLocation = useFinance((state) => state.setCategoryMoneyLocation);
+  const setCategoryPaid = useFinance((state) => state.setCategoryPaid);
   const renameItem = useFinance((state) => state.renameItem);
   const addItem = useFinance((state) => state.addItem);
   const removeItem = useFinance((state) => state.removeItem);
@@ -143,6 +144,7 @@ export function QuincenaPanel() {
           const total = categoryTotal(category);
           const open = openIds[category.id] ?? false;
           const isSaving = category.role === "life";
+          const paid = category.paid === true;
           
           return (
             <div key={category.id} className="category-card card overflow-hidden">
@@ -189,6 +191,21 @@ export function QuincenaPanel() {
                 </div>
 
                 <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
+                  <label
+                    className={cn(
+                      "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-xs font-medium",
+                      paid ? "border-good/40 bg-good/10 text-good" : "border-line text-muted",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      className="size-4 shrink-0 accent-good"
+                      aria-label={`Pagado: ${category.name}`}
+                      checked={paid}
+                      onChange={(event) => setCategoryPaid(category.id, event.currentTarget.checked)}
+                    />
+                    {paid ? "Pagado" : "Pendiente"}
+                  </label>
                   <button
                     type="button"
                     onClick={(e) => {
