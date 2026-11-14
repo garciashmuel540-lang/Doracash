@@ -17,7 +17,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Control de finanzas quincenales en córdobas: gastos, margen y ahorro.",
       },
-      { name: "theme-color", content: "#081626" },
+      { name: "theme-color", content: "#0D1821" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

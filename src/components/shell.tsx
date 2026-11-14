@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
+import { Bell, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
@@ -9,7 +9,7 @@ import { MascotAvatar } from "./mascot-avatar";
 import { Button, Modal, IconButton } from "@/components/ui";
 
 const NAV = [
-  { to: "/", label: "Quincena", icon: Home, exact: true },
+  { to: "/", label: "Quincena", icon: Bell, exact: true },
   { to: "/ahorro", label: "Ahorros", icon: PiggyBank },
   { to: "/historial", label: "Historial", icon: History },
   { to: "/plan", label: "Plan", icon: LineChart },
