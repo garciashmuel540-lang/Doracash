@@ -4,6 +4,7 @@ import { ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "l
 import { toast } from "sonner";
 import { Button, Modal, MoneyField } from "@/components/ui";
 import { PageHeader } from "@/components/shell";
+import { playSelectionHaptic } from "@/lib/haptics";
 import { cn } from "@/lib/cn";
 import { ItemRow } from "@/components/item-row";
 import {
@@ -152,9 +153,11 @@ export function QuincenaPanel() {
                 aria-label={`Dónde dejar el dinero de ${category.name}`}
                 orientation="horizontal"
                 value={category.moneyLocation === "cash" ? "cash" : "account"}
-                onValueChange={(value) =>
-                  setCategoryMoneyLocation(category.id, value === "cash" ? "cash" : "account")
-                }
+                onValueChange={(value) => {
+                  const location = value === "cash" ? "cash" : "account";
+                  setCategoryMoneyLocation(category.id, location);
+                  playSelectionHaptic();
+                }}
                 className="mx-4 mt-3 grid max-w-xs grid-cols-2 gap-1 rounded-full border border-line bg-surface-2 p-1"
               >
                 <RadioGroup.Item value="account" className="money-location-option">
@@ -199,11 +202,13 @@ export function QuincenaPanel() {
                   >
                     <input
                       type="checkbox"
-                      data-haptic-payment
                       className="size-4 shrink-0 accent-good"
                       aria-label={`Pagado: ${category.name}`}
                       checked={paid}
-                      onChange={(event) => setCategoryPaid(category.id, event.currentTarget.checked)}
+                      onChange={(event) => {
+                        setCategoryPaid(category.id, event.currentTarget.checked);
+                        playSelectionHaptic();
+                      }}
                     />
                     {paid ? "Pagado" : "Pendiente"}
                   </label>
