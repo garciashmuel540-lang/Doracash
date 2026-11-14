@@ -2,7 +2,7 @@ import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Modal, MoneyField } from "@/components/ui";
+import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
 import { PageHeader } from "@/components/shell";
 import { playSelectionHaptic } from "@/lib/haptics";
 import { cn } from "@/lib/cn";
@@ -12,7 +12,6 @@ import {
   daysLabel,
   daysUntil,
   estimatedBankBalance,
-  formatMoney,
   formatRange,
   periodExpenses,
   pendingMoneyLocations,
@@ -88,7 +87,7 @@ export function QuincenaPanel() {
       <section className="hero-card balance-overview">
         <div className="balance-main">
           <p className="balance-eyebrow"><Wallet className="size-4" /> TU BOLSILLO DISPONIBLE</p>
-          <p className={cn("balance-amount font-display tabular-nums", surplus < 0 ? "text-bad" : "text-fg")}>{formatMoney(surplus)}</p>
+          <p className={cn("balance-amount font-display tabular-nums", surplus < 0 ? "text-bad" : "text-fg")}><MoneyAmount value={surplus} /></p>
           <p className="mt-3 text-sm text-muted">Cuida tu futuro. Disfruta el presente.</p>
           <Button className="mt-6" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
             <PiggyBank className="size-4" /> Agregar a ahorros <ArrowUpRight className="size-4" />
@@ -100,7 +99,7 @@ export function QuincenaPanel() {
           <div className="mt-5 flex items-start justify-between gap-4 text-sm">
           <div>
             <p className="text-muted">Gastos</p>
-            <p className="font-display text-xl tabular-nums">{formatMoney(expenses)}</p>
+            <p className="font-display text-xl tabular-nums"><MoneyAmount value={expenses} /></p>
           </div>
           <div className="text-right">
             <p className="text-muted">Margen disponible</p>
@@ -116,9 +115,9 @@ export function QuincenaPanel() {
       </section>
 
       <dl aria-live="polite" aria-atomic="true" className="card mt-4 flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-3">
-        <dt className="text-sm font-medium">BANPRO · Saldo estimado</dt>
+        <dt className="text-sm font-medium">Saldo estimado</dt>
         <dd className={cn("font-semibold tabular-nums", bankBalance < 0 ? "text-bad" : "text-gold")}>
-          {formatMoney(bankBalance)}
+          <MoneyAmount value={bankBalance} />
         </dd>
       </dl>
 
@@ -138,13 +137,13 @@ export function QuincenaPanel() {
         <div className="min-w-0 px-4">
           <dt className="text-sm text-muted">Efectivo a retirar</dt>
           <dd className="mt-1 break-words font-display text-xl tabular-nums text-gold">
-            {formatMoney(cash)}
+            <MoneyAmount value={cash} />
           </dd>
         </div>
         <div className="min-w-0 px-4">
           <dt className="text-sm text-muted">Pendiente en cuenta</dt>
           <dd className="mt-1 break-words font-display text-xl tabular-nums">
-            {formatMoney(account)}
+            <MoneyAmount value={account} />
           </dd>
         </div>
       </dl>
@@ -232,7 +231,7 @@ export function QuincenaPanel() {
                     className="font-display text-lg tabular-nums rounded-xl px-3 py-2 break-all text-gold hover:bg-surface-2 active:scale-95 transition"
                     aria-label={`Editar monto de ${category.name}`}
                   >
-                    {formatMoney(total)}
+                    <MoneyAmount value={total} />
                   </button>
                 </div>
               </div>
@@ -345,7 +344,7 @@ export function QuincenaPanel() {
                 }}
               >
                 <span>{banco}</span>
-                <span className="text-xs text-muted">+ {formatMoney(savingsAmount)}</span>
+                <span className="text-xs text-muted">+ <MoneyAmount value={savingsAmount} /></span>
               </Button>
             ))}
           </div>

@@ -1,9 +1,9 @@
+import { MoneyAmount } from "@/components/ui";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell";
 import {
   buildInsights,
-  formatMoney,
   monthExpenseEstimate,
   openPeriod,
   periodExpenses,
@@ -56,17 +56,17 @@ function PlanPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <article className="hero-card p-4">
           <p className="text-xs text-muted">Si el mes se parece</p>
-          <p className="mt-2 font-display text-3xl tabular-nums">{formatMoney(month)}</p>
+          <p className="mt-2 font-display text-3xl tabular-nums"><MoneyAmount value={month} /></p>
           <p className="mt-2 text-sm text-pretty text-muted">
             Gastos estimados del mes. Sirve de marca para el fondo de emergencia.
           </p>
         </article>
         <article className="card p-4">
           <p className="text-xs text-muted">En 24 quincenas</p>
-          <p className="mt-2 font-display text-3xl tabular-nums text-good">{formatMoney(yearAll)}</p>
+          <p className="mt-2 font-display text-3xl tabular-nums text-good"><MoneyAmount value={yearAll} /></p>
           <p className="mt-2 text-sm text-pretty text-muted">
             {period.setAside > 0
-              ? `Si solo cumplís el plan de ${formatMoney(period.setAside)}, serían ${formatMoney(yearPlan)}.`
+              ? <>Si solo cumplís el plan de <MoneyAmount value={period.setAside} />, serían <MoneyAmount value={yearPlan} />.</>
               : "Si apartás todo el margen de esta quincena, cada pago."}
           </p>
         </article>
@@ -91,7 +91,7 @@ function PlanPage() {
       <section className="card mt-4 p-4">
         <h2 className="font-display text-2xl">Si gastás menos</h2>
         <p className="mt-1 text-sm text-muted">
-          Un recorte imaginario de {formatMoney(cut)}. No cambia tus rubros: solo muestra el margen.
+          Un recorte imaginario de <MoneyAmount value={cut} />. No cambia tus rubros: solo muestra el margen.
         </p>
         <input
           type="range"
@@ -105,7 +105,7 @@ function PlanPage() {
           onChange={(event) => setCut(Number(event.target.value))}
         />
         <p className="text-sm">
-          Te quedarían {formatMoney(imagined)} · {imaginedRate}% de ahorro.
+          Te quedarían <MoneyAmount value={imagined} /> · {imaginedRate}% de ahorro.
         </p>
       </section>
 
@@ -147,7 +147,7 @@ function Meter({
       <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
         <span>{label}</span>
         <span className="tabular-nums text-muted">
-          {Math.round(value)}% · {formatMoney(amount)}
+          {Math.round(value)}% · <MoneyAmount value={amount} />
         </span>
       </div>
       <div className="relative h-2 rounded-full bg-surface-2">

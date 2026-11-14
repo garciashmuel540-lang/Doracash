@@ -1,7 +1,8 @@
+import { MoneyAmount } from "@/components/ui";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell";
 import { useFinance } from "@/lib/store";
-import { formatMoney, periodExpenses, periodSurplus } from "@/lib/finance";
+import { periodExpenses, periodSurplus } from "@/lib/finance";
 
 export const Route = createFileRoute("/_app/historial")({
   component: HistorialPage,
@@ -45,15 +46,15 @@ function HistorialPage() {
                 <div className="flex justify-between text-sm mt-4 border-t border-line pt-3">
                   <div>
                     <p className="text-muted text-xs">Ingreso</p>
-                    <p className="font-medium">{formatMoney(period.income || 0)}</p>
+                    <p className="font-medium"><MoneyAmount value={period.income || 0} /></p>
                   </div>
                   <div>
                     <p className="text-muted text-xs">Gastos</p>
-                    <p className="font-medium">{formatMoney(expenses)}</p>
+                    <p className="font-medium"><MoneyAmount value={expenses} /></p>
                   </div>
                   <div className="text-right">
                     <p className="text-muted text-xs">Libre</p>
-                    <p className="font-medium text-good">{formatMoney(surplus)}</p>
+                    <p className="font-medium text-good"><MoneyAmount value={surplus} /></p>
                   </div>
                 </div>
               </div>

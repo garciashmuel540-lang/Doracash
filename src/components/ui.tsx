@@ -3,7 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { formatPlain, parseMoney } from "@/lib/finance";
+import { formatMoney, formatPlain, parseMoney } from "@/lib/finance";
 
 const buttonStyles = cva(
   "liquid-button inline-flex min-h-11 max-w-full whitespace-normal py-2 text-center items-center justify-center gap-2 rounded-full px-5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40",
@@ -62,6 +62,14 @@ export function IconButton({
   );
 }
 
+function moneyColor(value: number) {
+  return value > 0 ? "money-positive" : value < 0 ? "money-negative" : "text-fg";
+}
+
+export function MoneyAmount({ value }: { value: number }) {
+  return <span className={moneyColor(value)}>{formatMoney(value)}</span>;
+}
+
 export function MoneyField({
   value,
   onChange,
@@ -96,6 +104,7 @@ export function MoneyField({
         aria-label={label}
         className={cn(
           "w-full min-w-0 bg-transparent text-right tabular-nums outline-none",
+          moneyColor(draft === null ? value : parseMoney(draft)),
           size === "lg" ? "text-2xl font-medium" : "text-base",
         )}
         value={shown}

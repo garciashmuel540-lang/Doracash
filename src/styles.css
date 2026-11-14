@@ -27,6 +27,7 @@
   --line: rgba(192, 225, 255, .16);
   --gold: #62c9ff; --gold-fill: #38b5f5; --gold-ink: #04243a;
   --good: #89e2c2; --bad: #ff9396;
+  --money-positive: #76ff52; --money-negative: #ff696f;
   --companion-red: #ff6d71; --companion-yellow: #ffd166;
   --overlay: rgba(7, 19, 38, .75); --hero-wash: rgba(30, 144, 255, .15);
   --shadow: 0 12px 36px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.09);
@@ -47,6 +48,7 @@
   --line: rgba(22,66,95,.18);
   --gold: #006fa6; --gold-fill: #087cb6; --gold-ink: #fff;
   --good: #087653; --bad: #b92942;
+  --money-positive: #237600; --money-negative: #bd1731;
   --companion-red: #bf3546; --companion-yellow: #8d6000;
   --overlay: rgba(255, 255, 255, .6); --hero-wash: rgba(30, 144, 255, .1);
   --shadow: 0 8px 32px rgba(30, 144, 255, .1), inset 0 1px rgba(255,255,255,.8);
@@ -495,3 +497,6 @@ button:not(.corner-pet), .nav-item {
 @media (prefers-reduced-motion: reduce) {
   button:not(.corner-pet), .nav-item, .page-content, .category-content, .chat-message, .typing-dots i, .budget-progress > span { animation: none !important; transition: none !important; }
 }
+
+.money-positive { color: var(--money-positive); }
+.money-negative { color: var(--money-negative); }

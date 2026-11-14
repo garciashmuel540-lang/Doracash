@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Trash2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Button, Modal, MoneyField } from "@/components/ui";
+import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
 import { useFinance } from "@/lib/store";
-import { formatMoney, roleAmount, unlinkedSavings } from "@/lib/finance";
+import { roleAmount, unlinkedSavings } from "@/lib/finance";
 
 export const Route = createFileRoute("/_app/ahorro")({
   component: AhorroPage,
@@ -47,17 +47,17 @@ function AhorroPage() {
 
       <section className="hero-card p-5 mb-8">
         <p className="text-xs text-muted">Ahorro Total Acumulado</p>
-        <p className="mt-1 font-display text-5xl leading-none tabular-nums text-good">{formatMoney(totalAhorrado)}</p>
+        <p className="mt-1 font-display text-5xl leading-none tabular-nums text-good"><MoneyAmount value={totalAhorrado} /></p>
         
         <div className="mt-4 flex flex-col gap-1 text-sm border-t border-line pt-3">
           <p className="flex justify-between">
             <span className="text-muted">En cuentas de ahorro:</span>
-            <span className="font-medium">{formatMoney(inAccounts)}</span>
+            <span className="font-medium"><MoneyAmount value={inAccounts} /></span>
           </p>
           {savingsInPeriod > 0 && (
             <p className="flex justify-between text-good">
               <span>En rubros de esta quincena:</span>
-              <span className="font-medium">{formatMoney(savingsInPeriod)}</span>
+              <span className="font-medium"><MoneyAmount value={savingsInPeriod} /></span>
             </p>
           )}
         </div>
@@ -103,7 +103,7 @@ function AhorroPage() {
 
       {unlinked > 0 && (
         <div className="card mt-4 p-4">
-          <p className="mb-2 text-sm text-muted">Apartado sin cuenta vinculada: {formatMoney(unlinked)}</p>
+          <p className="mb-2 text-sm text-muted">Apartado sin cuenta vinculada: <MoneyAmount value={unlinked} /></p>
           <Button variant="ghost" onClick={() => {
             setRecoveryAmount(0);
             setRecoveryOpen(true);
@@ -113,7 +113,7 @@ function AhorroPage() {
       <Modal title="Recuperar al disponible" open={recoveryOpen} onOpenChange={setRecoveryOpen}>
         <div className="flex flex-col gap-4 p-5">
           <p className="text-sm text-muted">
-            Ingresa el monto que ya quitaste de tus ahorros. Puedes recuperar hasta {formatMoney(unlinked)}.
+            Ingresa el monto que ya quitaste de tus ahorros. Puedes recuperar hasta <MoneyAmount value={unlinked} />.
           </p>
           <MoneyField label="Monto a recuperar" value={recoveryAmount} onChange={setRecoveryAmount} />
           <Button disabled={recoveryAmount <= 0 || recoveryAmount > unlinked} onClick={() => {
