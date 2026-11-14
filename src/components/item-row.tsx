@@ -43,7 +43,7 @@ export function ItemRow({
           className="min-w-0 w-full flex-1 accent-gold"
         />
         <div className="w-28 shrink-0">
-          <MoneyField label={`Monto de ${name}`} value={amount} onChange={onAmount} />
+          <MoneyField label={`Monto de ${name}`} value={amount} onChange={onAmount} outflow={role !== "life"} />
         </div>
       </div>
     </li>

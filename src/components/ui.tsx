@@ -62,12 +62,13 @@ export function IconButton({
   );
 }
 
-function moneyColor(value: number) {
-  return value > 0 ? "money-positive" : value < 0 ? "money-negative" : "text-fg";
+function moneyColor(value: number, outflow: boolean) {
+  if (value === 0) return "text-fg";
+  return outflow || value < 0 ? "money-negative" : "money-positive";
 }
 
-export function MoneyAmount({ value }: { value: number }) {
-  return <span className={moneyColor(value)}>{formatMoney(value)}</span>;
+export function MoneyAmount({ value, outflow = false }: { value: number; outflow?: boolean }) {
+  return <span className={moneyColor(value, outflow)}>{formatMoney(value)}</span>;
 }
 
 export function MoneyField({
@@ -77,6 +78,7 @@ export function MoneyField({
   className,
   size = "md",
   commitOnBlur = false,
+  outflow = false,
 }: {
   value: number;
   onChange: (value: number) => void;
@@ -84,6 +86,7 @@ export function MoneyField({
   className?: string;
   size?: "md" | "lg";
   commitOnBlur?: boolean;
+  outflow?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const id = useId();
@@ -104,7 +107,7 @@ export function MoneyField({
         aria-label={label}
         className={cn(
           "w-full min-w-0 bg-transparent text-right tabular-nums outline-none",
-          moneyColor(draft === null ? value : parseMoney(draft)),
+          moneyColor(draft === null ? value : parseMoney(draft), outflow),
           size === "lg" ? "text-2xl font-medium" : "text-base",
         )}
         value={shown}

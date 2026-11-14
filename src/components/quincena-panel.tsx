@@ -12,6 +12,7 @@ import {
   daysLabel,
   daysUntil,
   estimatedBankBalance,
+  formatMoney,
   formatRange,
   periodExpenses,
   pendingMoneyLocations,
@@ -99,7 +100,7 @@ export function QuincenaPanel() {
           <div className="mt-5 flex items-start justify-between gap-4 text-sm">
           <div>
             <p className="text-muted">Gastos</p>
-            <p className="font-display text-xl tabular-nums"><MoneyAmount value={expenses} /></p>
+            <p className="font-display text-xl tabular-nums"><MoneyAmount value={expenses} outflow /></p>
           </div>
           <div className="text-right">
             <p className="text-muted">Margen disponible</p>
@@ -137,13 +138,13 @@ export function QuincenaPanel() {
         <div className="min-w-0 px-4">
           <dt className="text-sm text-muted">Efectivo a retirar</dt>
           <dd className="mt-1 break-words font-display text-xl tabular-nums text-gold">
-            <MoneyAmount value={cash} />
+            {formatMoney(cash)}
           </dd>
         </div>
         <div className="min-w-0 px-4">
           <dt className="text-sm text-muted">Pendiente en cuenta</dt>
           <dd className="mt-1 break-words font-display text-xl tabular-nums">
-            <MoneyAmount value={account} />
+            {formatMoney(account)}
           </dd>
         </div>
       </dl>
@@ -153,6 +154,9 @@ export function QuincenaPanel() {
           const total = categoryTotal(category);
           const open = openIds[category.id] ?? false;
           const isSaving = category.role === "life";
+          const hasOutflow = category.items.length === 0
+            ? !isSaving
+            : category.items.some((item) => (item.roleOverride ?? category.role) !== "life");
           const paid = category.paid === true;
           
           return (
@@ -231,7 +235,7 @@ export function QuincenaPanel() {
                     className="font-display text-lg tabular-nums rounded-xl px-3 py-2 break-all text-gold hover:bg-surface-2 active:scale-95 transition"
                     aria-label={`Editar monto de ${category.name}`}
                   >
-                    <MoneyAmount value={total} />
+                    <MoneyAmount value={total} outflow={hasOutflow} />
                   </button>
                 </div>
               </div>
@@ -257,7 +261,7 @@ export function QuincenaPanel() {
                   {editingCategory === category.id && (
                     <div className="mt-3 rounded-xl border border-line bg-surface p-3 flex flex-col gap-3">
                       <p className="text-sm font-medium">Monto de {category.name}</p>
-                      <MoneyField label="Monto del rubro" value={categoryAmount} onChange={setCategoryAmount} />
+                      <MoneyField label="Monto del rubro" value={categoryAmount} onChange={setCategoryAmount} outflow={hasOutflow} />
                       <div className="flex flex-wrap gap-2">
                         <Button
                           full

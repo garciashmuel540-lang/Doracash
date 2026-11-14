@@ -50,7 +50,7 @@ function HistorialPage() {
                   </div>
                   <div>
                     <p className="text-muted text-xs">Gastos</p>
-                    <p className="font-medium"><MoneyAmount value={expenses} /></p>
+                    <p className="font-medium"><MoneyAmount value={expenses} outflow /></p>
                   </div>
                   <div className="text-right">
                     <p className="text-muted text-xs">Libre</p>

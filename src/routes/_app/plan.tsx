@@ -56,7 +56,7 @@ function PlanPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <article className="hero-card p-4">
           <p className="text-xs text-muted">Si el mes se parece</p>
-          <p className="mt-2 font-display text-3xl tabular-nums"><MoneyAmount value={month} /></p>
+          <p className="mt-2 font-display text-3xl tabular-nums"><MoneyAmount value={month} outflow /></p>
           <p className="mt-2 text-sm text-pretty text-muted">
             Gastos estimados del mes. Sirve de marca para el fondo de emergencia.
           </p>
@@ -147,7 +147,7 @@ function Meter({
       <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
         <span>{label}</span>
         <span className="tabular-nums text-muted">
-          {Math.round(value)}% · <MoneyAmount value={amount} />
+          {Math.round(value)}% · <MoneyAmount value={amount} outflow={!good} />
         </span>
       </div>
       <div className="relative h-2 rounded-full bg-surface-2">
