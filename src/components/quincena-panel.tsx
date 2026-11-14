@@ -27,7 +27,6 @@ export function QuincenaPanel() {
   const periods = useFinance((state) => state.periods);
   const intent = useFinance((state) => state.intent);
   const clearIntent = useFinance((state) => state.clearIntent);
-  const setBankAmount = useFinance((state) => state.setBankAmount);
   const setIncome = useFinance((state) => state.setIncome);
   const setItemRole = useFinance((state) => state.setItemRole);
   const setCategoryRole = useFinance((state) => state.setCategoryRole);
@@ -116,30 +115,12 @@ export function QuincenaPanel() {
         </div>
       </section>
 
-      <details className="card mt-4 px-4 py-3">
-        <summary className="cursor-pointer text-sm">
-          <span className="font-medium">BANPRO · Saldo estimado</span>
-          <strong className={cn("ml-2 tabular-nums", bankBalance < 0 ? "text-bad" : "text-gold")}>
-            {formatMoney(bankBalance)}
-          </strong>
-        </summary>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div>
-            <p className="mb-1 text-xs text-muted">Saldo antes del salario</p>
-            <MoneyField label="Saldo BANPRO antes del salario" value={period.bankOpeningBalance ?? 0}
-              onChange={(amount) => setBankAmount("bankOpeningBalance", amount)} />
-          </div>
-          <div>
-            <p className="mb-1 text-xs text-muted">Retiros y otras deducciones</p>
-            <MoneyField label="Retiros y otras deducciones de BANPRO" value={period.bankOtherOutflows ?? 0}
-              onChange={(amount) => setBankAmount("bankOtherOutflows", amount)} />
-          </div>
-          <p className="text-xs text-muted sm:col-span-2">
-            Suma el ingreso neto y descuenta los rubros pagados desde Cuenta y los apartados a Ahorros.
-            Ingresa el total ya retirado del cajero y otras salidas que aún no estén descontadas.
-          </p>
-        </div>
-      </details>
+      <dl aria-live="polite" aria-atomic="true" className="card mt-4 flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-3">
+        <dt className="text-sm font-medium">BANPRO · Saldo estimado</dt>
+        <dd className={cn("font-semibold tabular-nums", bankBalance < 0 ? "text-bad" : "text-gold")}>
+          {formatMoney(bankBalance)}
+        </dd>
+      </dl>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <div><p className="page-eyebrow mb-1">CADA CÓRDOBA, EN SU LUGAR</p><h2 className="font-display text-2xl">Tus rubros</h2></div>
