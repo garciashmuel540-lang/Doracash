@@ -4,7 +4,7 @@ import { Trash2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import { Button, Modal, MoneyField } from "@/components/ui";
 import { useFinance } from "@/lib/store";
-import { formatMoney, roleAmount } from "@/lib/finance";
+import { formatMoney, roleAmount, unlinkedSavings } from "@/lib/finance";
 
 export const Route = createFileRoute("/_app/ahorro")({
   component: AhorroPage,
@@ -15,14 +15,19 @@ function AhorroPage() {
   const periods = useFinance((s) => s.periods);
   const addGoal = useFinance((s) => s.addGoal);
   const updateGoal = useFinance((s) => s.updateGoal);
+  const recoverUnlinkedSavings = useFinance((s) => s.recoverUnlinkedSavings);
   const removeGoal = useFinance((s) => s.removeGoal);
   
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryAmount, setRecoveryAmount] = useState(0);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
   const [accountName, setAccountName] = useState("");
   const [accountAmount, setAccountAmount] = useState(0);
 
   const period = periods.find((p) => p.status === "open");
   
+  const unlinked = period ? unlinkedSavings(period) : 0;
+
   // Sumamos el dinero de las cuentas de ahorro
   const inAccounts = goals.reduce((acc, g) => acc + g.saved, 0);
   
@@ -86,7 +91,8 @@ function AhorroPage() {
                   <MoneyField 
                     label={`Saldo de ${account.name}`}
                     value={account.saved} 
-                    onChange={(val) => updateGoal(account.id, { saved: val } as any)} 
+                    commitOnBlur
+                    onChange={(saved) => updateGoal(account.id, { saved })}
                   />
                 </div>
               </div>
@@ -94,6 +100,27 @@ function AhorroPage() {
           ))}
         </div>
       )}
+
+      {unlinked > 0 && (
+        <div className="card mt-4 p-4">
+          <p className="mb-2 text-sm text-muted">Apartado sin cuenta vinculada: {formatMoney(unlinked)}</p>
+          <Button variant="ghost" onClick={() => {
+            setRecoveryAmount(0);
+            setRecoveryOpen(true);
+          }}>Recuperar al disponible</Button>
+        </div>
+      )}
+      <Modal title="Recuperar al disponible" open={recoveryOpen} onOpenChange={setRecoveryOpen}>
+        <div className="flex flex-col gap-4 p-5">
+          <p className="text-sm text-muted">
+            Ingresa el monto que ya quitaste de tus ahorros. Puedes recuperar hasta {formatMoney(unlinked)}.
+          </p>
+          <MoneyField label="Monto a recuperar" value={recoveryAmount} onChange={setRecoveryAmount} />
+          <Button disabled={recoveryAmount <= 0 || recoveryAmount > unlinked} onClick={() => {
+            if (recoverUnlinkedSavings(recoveryAmount)) setRecoveryOpen(false);
+          }}>Devolver al disponible</Button>
+        </div>
+      </Modal>
 
       {/* Modal para nueva cuenta */}
       <Modal title="Nueva cuenta de ahorro" open={newAccountOpen} onOpenChange={setNewAccountOpen}>

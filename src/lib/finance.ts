@@ -231,6 +231,11 @@ export function periodExpenses(period: Period) {
   return roundMoney(roleAmount(period, 'need') + roleAmount(period, 'debt'));
 }
 
+export function unlinkedSavings(period: Period) {
+  const linked = (period.contributions ?? []).reduce((total, entry) => total + entry.amount, 0);
+  return clampMoney((period.setAside || 0) - linked);
+}
+
 export function periodSurplus(period: Period) {
   return roundMoney(period.income - periodExpenses(period) - roleAmount(period, 'life') - (period.setAside || 0));
 }

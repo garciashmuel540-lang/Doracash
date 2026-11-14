@@ -68,12 +68,14 @@ export function MoneyField({
   label,
   className,
   size = "md",
+  commitOnBlur = false,
 }: {
   value: number;
   onChange: (value: number) => void;
   label: string;
   className?: string;
   size?: "md" | "lg";
+  commitOnBlur?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const id = useId();
@@ -105,9 +107,12 @@ export function MoneyField({
             : raw.replace(",", ".");
           if (!/^\d*(\.\d{0,3})?$/.test(normalized)) return;
           setDraft(normalized);
-          onChange(parseMoney(normalized));
+          if (!commitOnBlur) onChange(parseMoney(normalized));
         }}
-        onBlur={() => setDraft(null)}
+        onBlur={() => {
+          if (commitOnBlur && draft !== null) onChange(parseMoney(draft));
+          setDraft(null);
+        }}
       />
     </div>
   );

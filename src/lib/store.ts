@@ -7,6 +7,7 @@ import {
   type Category,
   openPeriod,
   uid,
+  unlinkedSavings,
   type Contribution,
   type Data,
   type Goal,
@@ -42,6 +43,7 @@ type Store = {
   removeGoal: (id: string) => void;
   addToGoal: (id: string, amount: number) => void;
   transferToSavings: (name: string, amount: number) => boolean;
+  recoverUnlinkedSavings: (amount: number) => boolean;
   closePeriod: () => void;
   openNext: () => void;
   dismissIntro: () => void;
@@ -72,6 +74,21 @@ function withItems(period: Period, itemId: string, updater: (item: LineItem) => 
       ...category,
       items: category.items.map((item) => (item.id === itemId ? updater(item) : item)),
     })),
+  };
+}
+
+function returnContribution(period: Period, goalId: string, decrease: number): Period {
+  const contributions = period.contributions ?? [];
+  const linked = contributions.find((entry) => entry.goalId === goalId);
+  if (!linked || decrease <= 0) return period;
+  const returned = Math.min(decrease, linked.amount, period.setAside || 0);
+  const remaining = clampMoney(linked.amount - returned);
+  return {
+    ...period,
+    setAside: clampMoney(period.setAside - returned),
+    contributions: contributions.flatMap((entry) =>
+      entry.goalId !== goalId ? [entry] : remaining > 0 ? [{ ...entry, amount: remaining }] : [],
+    ),
   };
 }
 
@@ -230,11 +247,19 @@ export const useFinance = create<Store>()(
         })),
 
       removeGoal: (id) =>
-        set((state) => ({ goals: state.goals.filter((g) => g.id !== id) })),
+        set((state) => ({
+          goals: state.goals.filter((g) => g.id !== id),
+          ...mapOpen(state, (period) => returnContribution(period, id, Infinity)),
+        })),
 
       updateGoal: (id, patch) =>
         set((state) => ({
           goals: state.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+          ...(patch.saved === undefined ? {} : mapOpen(state, (period) =>
+            returnContribution(period, id, clampMoney(
+              (state.goals.find((goal) => goal.id === id)?.saved ?? 0) - (patch.saved ?? 0),
+            )),
+          )),
         })),
 
       addToGoal: (id, amount) =>
@@ -247,11 +272,34 @@ export const useFinance = create<Store>()(
         const period = openPeriod(state);
         const value = clampMoney(amount);
         if (!period || value <= 0 || value > periodSurplus(period)) return false;
-        const existing = state.goals.find(g => g.name === name);
+        const existing = state.goals.find((goal) => goal.name === name);
+        const goalId = existing?.id ?? uid("goal");
+        const contributions = period.contributions ?? [];
+        const linked = contributions.find((entry) => entry.goalId === goalId);
         set({
-          goals: existing ? state.goals.map(g => g.id === existing.id ? { ...g, saved: g.saved + value } : g)
-            : [...state.goals, { id: uid('goal'), name, target: 999999, saved: value, kind: 'custom' }],
-          periods: state.periods.map(p => p.id === period.id ? { ...p, setAside: (p.setAside || 0) + value } : p),
+          goals: existing
+            ? state.goals.map((goal) => goal.id === goalId ? { ...goal, saved: clampMoney(goal.saved + value) } : goal)
+            : [...state.goals, { id: goalId, name, target: 999999, saved: value, kind: "custom" }],
+          periods: state.periods.map((entry) => entry.id === period.id ? {
+            ...entry,
+            setAside: clampMoney((entry.setAside || 0) + value),
+            contributions: linked
+              ? contributions.map((item) => item === linked ? { ...item, amount: clampMoney(item.amount + value) } : item)
+              : [...contributions, { goalId, amount: value }],
+          } : entry),
+        });
+        return true;
+      },
+
+      recoverUnlinkedSavings: (amount) => {
+        const state = get();
+        const period = openPeriod(state);
+        const value = clampMoney(amount);
+        if (!period || value <= 0 || value > unlinkedSavings(period)) return false;
+        set({
+          periods: state.periods.map((entry) => entry.id === period.id
+            ? { ...entry, setAside: clampMoney(entry.setAside - value) }
+            : entry),
         });
         return true;
       },
