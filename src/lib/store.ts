@@ -25,6 +25,7 @@ type Store = {
   introDismissed: boolean;
   intent: "apartar" | null;
   setTheme: (theme: Data["theme"]) => void;
+  setBankAmount: (field: "bankOpeningBalance" | "bankOtherOutflows", amount: number) => void;
   setIncome: (amount: number) => void;
   setItemAmount: (itemId: string, amount: number) => void;
   setItemRole: (itemId: string, role: Role) => void;
@@ -109,6 +110,9 @@ export const useFinance = create<Store>()(
       requestApartar: () => set({ intent: "apartar" }),
       clearIntent: () => set({ intent: null }),
       
+      setBankAmount: (field, amount) =>
+        set((state) => mapOpen(state, (period) => ({ ...period, [field]: clampMoney(amount) }))),
+
       setIncome: (amount) =>
         set((state) => mapOpen(state, (period) => ({ ...period, income: clampMoney(amount) }))),
       

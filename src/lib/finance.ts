@@ -30,6 +30,8 @@ export type Period = {
   start: string;
   end: string;
   income: number;
+  bankOpeningBalance?: number;
+  bankOtherOutflows?: number;
   categories: Category[];
   status: "open" | "closed";
   setAside: number;
@@ -225,6 +227,14 @@ export function pendingMoneyLocations(period: Pick<Period, "categories">): Recor
     totals[location] = roundMoney(totals[location] + categoryTotal(category));
   }
   return totals;
+}
+
+export function estimatedBankBalance(period: Period) {
+  const paidFromAccount = period.categories
+    .filter((category) => category.paid === true && category.moneyLocation !== "cash")
+    .reduce((total, category) => total + categoryTotal(category), 0);
+  return roundMoney((period.bankOpeningBalance ?? 0) + period.income
+    - paidFromAccount - (period.setAside || 0) - (period.bankOtherOutflows ?? 0));
 }
 
 export function periodExpenses(period: Period) {
@@ -566,6 +576,8 @@ export function sanitizeData(raw: unknown): Data | null {
       start,
       end,
       income: readMoney(row.income),
+      bankOpeningBalance: readMoney(row.bankOpeningBalance),
+      bankOtherOutflows: readMoney(row.bankOtherOutflows),
       categories,
       status: row.status === "closed" ? "closed" : "open",
       setAside: readMoney(row.setAside),
