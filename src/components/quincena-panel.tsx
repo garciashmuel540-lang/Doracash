@@ -199,6 +199,7 @@ export function QuincenaPanel() {
                   >
                     <input
                       type="checkbox"
+                      data-haptic-payment
                       className="size-4 shrink-0 accent-good"
                       aria-label={`Pagado: ${category.name}`}
                       checked={paid}
