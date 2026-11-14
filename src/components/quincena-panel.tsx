@@ -327,10 +327,10 @@ export function QuincenaPanel() {
                   )}
                   {dueDate && <time dateTime={dueDate}>Vence {dueDate.slice(8)}/{dueDate.slice(5, 7)}</time>}
                   {!paid && total > 0 && (
-                    <button type="button" className="min-h-11 font-medium text-gold" onClick={() => {
+                    <Button type="button" variant="ghost" className="px-4 text-xs leading-snug text-gold [overflow-wrap:anywhere]" onClick={() => {
                       setPaymentAmount(0);
                       setPaymentId(category.id);
-                    }}>Registrar abono</button>
+                    }}>Registrar abono</Button>
                   )}
                 </div>
               )}
