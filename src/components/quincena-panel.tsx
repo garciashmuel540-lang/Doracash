@@ -9,6 +9,8 @@ import { cn } from "@/lib/cn";
 import { ItemRow } from "@/components/item-row";
 import {
   categoryTotal,
+  allPaymentsComplete,
+  categoryPendingAmount,
   categoryPaidAmount,
   categoryDueDate,
   paidRubrosTotal,
@@ -46,6 +48,7 @@ export function QuincenaPanel() {
   const openNext = useFinance((state) => state.openNext);
 
   const period = periods.find((item) => item.status === "open");
+  const completedPeriodId = period && allPaymentsComplete(period) ? period.id : undefined;
   const [rolloverOpen, setRolloverOpen] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
@@ -63,6 +66,14 @@ export function QuincenaPanel() {
     }
   }, [intent, period, clearIntent]);
 
+  useEffect(() => {
+    if (!completedPeriodId) return;
+    const timer = window.setTimeout(() => {
+      openNext(true, true, completedPeriodId);
+    }, 8000);
+    return () => window.clearTimeout(timer);
+  }, [completedPeriodId, openNext]);
+
   if (!period) {
     return (
       <div>
@@ -76,10 +87,10 @@ export function QuincenaPanel() {
 
   const paymentCategory = period.categories.find((category) => category.id === paymentId);
   const paymentRemaining = paymentCategory
-    ? Math.round((categoryTotal(paymentCategory) - categoryPaidAmount(paymentCategory)) * 1000) / 1000
+    ? categoryPendingAmount(paymentCategory)
     : 0;
   const upcoming = period.categories.flatMap((category) => {
-    const date = categoryDueDate(period.start, category.dueDay);
+    const date = category.carriedDueDate ?? categoryDueDate(period.start, category.dueDay);
     return date && categoryPaidAmount(category) < categoryTotal(category)
       ? [{ category, date, days: daysUntil(date) }] : [];
   }).filter((entry) => entry.days <= 3).sort((a, b) => a.date.localeCompare(b.date));
@@ -87,7 +98,7 @@ export function QuincenaPanel() {
   function announceChange(message: string, undo: (() => boolean) | null) {
     if (!undo) return;
     toast.success(message, {
-      duration: 7000,
+      duration: 7500,
       action: {
         label: "Deshacer",
         onClick: () => {
@@ -223,7 +234,7 @@ export function QuincenaPanel() {
             : category.items.some((item) => (item.roleOverride ?? category.role) !== "life");
           const paidAmount = categoryPaidAmount(category);
           const paid = total > 0 && paidAmount >= total;
-          const dueDate = categoryDueDate(period.start, category.dueDay);
+          const dueDate = category.carriedDueDate ?? categoryDueDate(period.start, category.dueDay);
           
           return (
             <div key={category.id} className="category-card card overflow-hidden">
@@ -402,13 +413,18 @@ export function QuincenaPanel() {
         })}
       </div>
 
+      {completedPeriodId && (
+        <p className="mt-4 text-sm text-muted" role="status">
+          Pagos completos. La siguiente quincena se abrirá en unos segundos.
+        </p>
+      )}
       <Button variant="ghost" className="mt-5" onClick={() => setRolloverOpen(true)}>
-        Cerrar y abrir otra quincena
+        Pasar a la siguiente quincena
       </Button>
       <Modal title="Abrir otra quincena" open={rolloverOpen} onOpenChange={setRolloverOpen}>
         <div className="flex flex-col gap-3 p-5">
           <p className="text-sm text-muted">
-            Esta quincena quedará en Historial. Los rubros recurrentes se copian con sus montos y vencimientos.
+            Esta quincena quedará en Historial. Los pagos pendientes pasarán a la siguiente por el monto que falta.
           </p>
           <Button onClick={() => {
             openNext(true, true);
@@ -419,7 +435,7 @@ export function QuincenaPanel() {
             openNext(false, true);
             setRolloverOpen(false);
             toast.success("Nueva quincena lista");
-          }}>Abrir sin copiar rubros</Button>
+          }}>Abrir solo con pendientes</Button>
         </div>
       </Modal>
       <Modal title={paymentCategory ? `Abono a ${paymentCategory.name}` : "Registrar abono"}

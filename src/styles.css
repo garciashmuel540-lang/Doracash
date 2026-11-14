@@ -334,6 +334,7 @@ button:not(.corner-pet), .nav-item {
   transition: transform 200ms var(--ease-glass), box-shadow 200ms ease, background-color 200ms ease, border-color 200ms ease, color 200ms ease;
 }
 .app-frame button:not(.corner-pet):not(.category-disclosure), .sheet button, .nav-item {
+  border-radius: 999px;
   background-image: var(--glass-reflection);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shadow);

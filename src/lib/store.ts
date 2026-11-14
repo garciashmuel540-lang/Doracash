@@ -3,7 +3,8 @@ import { persist } from "zustand/middleware";
 import {
   clampMoney,
   categoryTotal,
-  cloneCategories,
+  categoriesForNextPeriod,
+  allPaymentsComplete,
   nextQuincena,
   previousClosed,
   currentQuincena,
@@ -52,7 +53,7 @@ type Store = {
   transferToSavings: (name: string, amount: number) => Undo | null;
   recoverUnlinkedSavings: (amount: number) => boolean;
   closePeriod: () => void;
-  openNext: (copyRecurring?: boolean, archiveOpen?: boolean) => void;
+  openNext: (copyRecurring?: boolean, archiveOpen?: boolean, completedPeriodId?: string) => void;
   dismissIntro: () => void;
   requestApartar: () => void;
   clearIntent: () => void;
@@ -246,7 +247,7 @@ export const useFinance = create<Store>()(
       setCategorySchedule: (categoryId, schedule) =>
         set((state) => mapOpen(state, (period) => ({
           ...period,
-          categories: period.categories.map((entry) => entry.id === categoryId ? { ...entry, ...schedule } : entry),
+          categories: period.categories.map((entry) => entry.id === categoryId ? { ...entry, ...schedule, carriedDueDate: "dueDay" in schedule ? undefined : entry.carriedDueDate } : entry),
         }))),
 
       removeCategory: (categoryId) =>
@@ -349,10 +350,11 @@ export const useFinance = create<Store>()(
 
       closePeriod: () => set((state) => ({ periods: state.periods.map((p) => (p.status === "open" ? { ...p, status: "closed" } : p)) })),
 
-      openNext: (copyRecurring = true, archiveOpen = false) => {
+      openNext: (copyRecurring = true, archiveOpen = false, completedPeriodId) => {
         set((state) => {
           const active = openPeriod(state);
           if (active && !archiveOpen) return state;
+          if (completedPeriodId && (!active || active.id !== completedPeriodId || !allPaymentsComplete(active))) return state;
           const current = currentQuincena();
           const lastClosed = active ?? previousClosed(state.periods);
           const periods = state.periods.map((period) => period.id === active?.id
@@ -360,7 +362,7 @@ export const useFinance = create<Store>()(
             : period);
           const range = lastClosed && current.start <= lastClosed.end ? nextQuincena(lastClosed.end) : current;
           const defaultCategories: Category[] = lastClosed
-            ? copyRecurring ? cloneCategories(lastClosed.categories.filter((category) => category.recurring !== false)) : []
+            ? categoriesForNextPeriod(lastClosed, copyRecurring)
             : [
             { id: uid('cat'), name: 'Gastos del hogar', role: 'need', tone: 0, items: [] },
             { id: uid('cat'), name: 'Transporte', role: 'need', tone: 1, items: [] },

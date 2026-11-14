@@ -19,6 +19,8 @@ export type Category = {
   paid?: boolean;
   paidAmount?: number;
   dueDay?: number;
+  carriedDueDate?: string;
+  recurringItems?: LineItem[];
   recurring?: boolean;
   items: LineItem[];
 };
@@ -233,6 +235,49 @@ export function pendingMoneyLocations(period: Pick<Period, "categories">): Recor
     totals[location] = roundMoney(totals[location] + categoryTotal(category) - categoryPaidAmount(category));
   }
   return totals;
+}
+
+export function categoryPendingAmount(category: Category) {
+  return roundMoney(categoryTotal(category) - categoryPaidAmount(category));
+}
+
+export function allPaymentsComplete(period: Period) {
+  return period.categories.some((category) => categoryTotal(category) > 0)
+    && period.categories.every((category) => categoryPendingAmount(category) === 0);
+}
+
+export function categoriesForNextPeriod(period: Period, copyRecurring: boolean): Category[] {
+  return period.categories.flatMap((category) => {
+    const pending = categoryPendingAmount(category);
+    const isRecurring = category.recurring !== false && copyRecurring;
+    if (pending === 0) {
+      if (!isRecurring) return [];
+      const [copy] = cloneCategories([{
+        ...category,
+        items: category.recurringItems ?? category.items,
+        recurringItems: undefined,
+        carriedDueDate: undefined,
+      }]);
+      return [copy];
+    }
+
+    // Allocate previous payments in item order to retain each remaining item's budget role.
+    let paid = categoryPaidAmount(category);
+    const remainingItems = category.items.flatMap((item) => {
+      const covered = Math.min(paid, item.amount);
+      paid = roundMoney(paid - covered);
+      const amount = roundMoney(item.amount - covered);
+      return amount > 0 ? [{ ...item, amount }] : [];
+    });
+    const [carry] = cloneCategories([{
+      ...category,
+      recurring: isRecurring,
+      recurringItems: isRecurring ? category.recurringItems ?? category.items : undefined,
+      carriedDueDate: category.carriedDueDate ?? categoryDueDate(period.start, category.dueDay),
+      items: remainingItems,
+    }]);
+    return [carry];
+  });
 }
 
 export function paidRubrosTotal(period: Pick<Period, "categories">) {
@@ -532,6 +577,24 @@ function readText(value: unknown, fallback: string, max: number) {
   return text || fallback;
 }
 
+function readLineItems(raw: unknown): LineItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    const item = asRecord(entry);
+    if (!item) return [];
+    const amount = readMoney(item.amount);
+    const roleOverride = item.roleOverride;
+    return [{
+      id: readText(item.id, uid("item"), 40),
+      name: readText(item.name, "Gasto", 40),
+      amount,
+      max: Math.max(readMoney(item.max), amount, 100),
+      roleOverride: roleOverride === "need" || roleOverride === "life" || roleOverride === "debt"
+        ? roleOverride : undefined,
+    }];
+  });
+}
+
 export function sanitizeData(raw: unknown): Data | null {
   const root = asRecord(raw);
   if (!root) return null;
@@ -554,21 +617,7 @@ export function sanitizeData(raw: unknown): Data | null {
           category.role === "life" || category.role === "debt" || category.role === "need"
             ? category.role
             : "need";
-        const items: LineItem[] = [];
-        if (Array.isArray(category.items)) {
-          for (const itemEntry of category.items) {
-            const item = asRecord(itemEntry);
-            if (!item) continue;
-            const amount = readMoney(item.amount);
-            const max = Math.max(readMoney(item.max), amount, 100);
-            items.push({
-              id: readText(item.id, uid("item"), 40),
-              name: readText(item.name, "Gasto", 40),
-              amount,
-              max,
-            });
-          }
-        }
+        const items = readLineItems(category.items);
         categories.push({
           id: readText(category.id, uid("cat"), 40),
           name: readText(category.name, "Rubro", 40),
@@ -578,6 +627,9 @@ export function sanitizeData(raw: unknown): Data | null {
           paidAmount: category.paidAmount === undefined ? undefined : readMoney(category.paidAmount),
           dueDay: typeof category.dueDay === "number" ? category.dueDay : undefined,
           recurring: category.recurring !== false,
+          recurringItems: Array.isArray(category.recurringItems) ? readLineItems(category.recurringItems) : undefined,
+          carriedDueDate: typeof category.carriedDueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(category.carriedDueDate)
+            ? category.carriedDueDate : undefined,
           tone: Number.isInteger(category.tone) ? Number(category.tone) % 6 : index % 6,
           items,
         });
