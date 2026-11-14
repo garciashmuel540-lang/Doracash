@@ -17,6 +17,9 @@ export type Category = {
   tone: number;
   moneyLocation?: MoneyLocation;
   paid?: boolean;
+  paidAmount?: number;
+  dueDay?: number;
+  recurring?: boolean;
   items: LineItem[];
 };
 
@@ -217,21 +220,38 @@ export function categoryTotal(category: Category) {
   return roundMoney(category.items.reduce((sum, item) => sum + Number(item.amount), 0));
 }
 
+export function categoryPaidAmount(category: Category) {
+  const total = categoryTotal(category);
+  if (category.paidAmount === undefined) return category.paid === true ? total : 0;
+  return Math.min(total, clampMoney(category.paidAmount));
+}
+
 export function pendingMoneyLocations(period: Pick<Period, "categories">): Record<MoneyLocation, number> {
   const totals = { account: 0, cash: 0 };
   for (const category of period.categories) {
-    if (category.paid === true) continue;
     const location = category.moneyLocation === "cash" ? "cash" : "account";
-    totals[location] = roundMoney(totals[location] + categoryTotal(category));
+    totals[location] = roundMoney(totals[location] + categoryTotal(category) - categoryPaidAmount(category));
   }
   return totals;
 }
 
+export function paidRubrosTotal(period: Pick<Period, "categories">) {
+  return roundMoney(period.categories.reduce((total, category) => total + categoryPaidAmount(category), 0));
+}
+
 export function estimatedBankBalance(period: Period) {
-  const paidTotal = period.categories
-    .filter((category) => category.paid === true)
-    .reduce((total, category) => total + categoryTotal(category), 0);
-  return roundMoney(period.income - paidTotal - (period.setAside || 0));
+  return roundMoney(period.income - paidRubrosTotal(period) - (period.setAside || 0));
+}
+
+export function categoryDueDate(periodStart: string, dueDay?: number) {
+  if (!dueDay || !Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) return;
+  const start = splitISO(periodStart);
+  const inMonth = (year: number, month: number) => iso(year, month + 1,
+    Math.min(dueDay, new Date(year, month + 1, 0).getDate()));
+  const date = inMonth(start.year, start.month);
+  if (date >= periodStart.slice(0, 10)) return date;
+  const next = new Date(start.year, start.month + 1, 1);
+  return inMonth(next.getFullYear(), next.getMonth());
 }
 
 export function periodExpenses(period: Period) {
@@ -345,6 +365,7 @@ export function cloneCategories(categories: Category[]): Category[] {
     ...category,
     id: uid("cat"),
     paid: false,
+    paidAmount: 0,
     items: category.items.map((item) => ({ ...item, id: uid("item") })),
   }));
 }
@@ -554,6 +575,9 @@ export function sanitizeData(raw: unknown): Data | null {
           role,
           moneyLocation: category.moneyLocation === "cash" ? "cash" : "account",
           paid: category.paid === true,
+          paidAmount: category.paidAmount === undefined ? undefined : readMoney(category.paidAmount),
+          dueDay: typeof category.dueDay === "number" ? category.dueDay : undefined,
+          recurring: category.recurring !== false,
           tone: Number.isInteger(category.tone) ? Number(category.tone) % 6 : index % 6,
           items,
         });

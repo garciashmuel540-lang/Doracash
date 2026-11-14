@@ -2,6 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
   clampMoney,
+  categoryTotal,
+  cloneCategories,
+  nextQuincena,
+  previousClosed,
   currentQuincena,
   periodSurplus,
   type Category,
@@ -17,6 +21,8 @@ import {
   type Period,
   type Role,
 } from "./finance";
+
+type Undo = () => boolean;
 
 type Store = {
   periods: Period[];
@@ -35,17 +41,18 @@ type Store = {
   renameCategory: (categoryId: string, name: string) => void;
   setCategoryRole: (categoryId: string, role: Role) => void;
   setCategoryMoneyLocation: (categoryId: string, moneyLocation: MoneyLocation) => void;
-  setCategoryPaid: (categoryId: string, paid: boolean) => void;
+  setCategoryPayment: (categoryId: string, payment: number | "full") => Undo | null;
+  setCategorySchedule: (categoryId: string, schedule: Pick<Category, "dueDay" | "recurring">) => void;
   removeCategory: (categoryId: string) => void;
   savePlan: (setAside: number, contributions: Contribution[]) => void;
   addGoal: (input: { name: string; target: number; saved: number; kind: GoalKind }) => void;
   updateGoal: (id: string, patch: Partial<Goal>) => void;
   removeGoal: (id: string) => void;
   addToGoal: (id: string, amount: number) => void;
-  transferToSavings: (name: string, amount: number) => boolean;
+  transferToSavings: (name: string, amount: number) => Undo | null;
   recoverUnlinkedSavings: (amount: number) => boolean;
   closePeriod: () => void;
-  openNext: () => void;
+  openNext: (copyRecurring?: boolean, archiveOpen?: boolean) => void;
   dismissIntro: () => void;
   requestApartar: () => void;
   clearIntent: () => void;
@@ -211,15 +218,36 @@ export const useFinance = create<Store>()(
           }))
         ),
 
-      setCategoryPaid: (categoryId, paid) =>
-        set((state) =>
-          mapOpen(state, (period) => ({
-            ...period,
-            categories: period.categories.map((category) =>
-              category.id === categoryId ? { ...category, paid } : category
-            ),
-          }))
-        ),
+      setCategoryPayment: (categoryId, payment) => {
+        const state = get();
+        const period = openPeriod(state);
+        const category = period?.categories.find((entry) => entry.id === categoryId);
+        if (!period || !category) return null;
+        const total = categoryTotal(category);
+        const paidAmount = payment === "full" ? total : Math.min(total, clampMoney(payment));
+        const paid = total > 0 && paidAmount >= total;
+        const apply = (current: Store, fields: Pick<Category, "paid" | "paidAmount">) =>
+          mapOpen(current, (entry) => entry.id !== period.id ? entry : {
+            ...entry,
+            categories: entry.categories.map((item) => item.id === categoryId ? { ...item, ...fields } : item),
+          });
+        set(apply(state, { paid, paidAmount }));
+        const saved = openPeriod(get())?.categories.find((entry) => entry.id === categoryId);
+        return () => {
+          const current = get();
+          const active = openPeriod(current);
+          if (!saved || active?.id !== period.id ||
+              active.categories.find((entry) => entry.id === categoryId) !== saved) return false;
+          set(apply(current, { paid: category.paid, paidAmount: category.paidAmount }));
+          return true;
+        };
+      },
+
+      setCategorySchedule: (categoryId, schedule) =>
+        set((state) => mapOpen(state, (period) => ({
+          ...period,
+          categories: period.categories.map((entry) => entry.id === categoryId ? { ...entry, ...schedule } : entry),
+        }))),
 
       removeCategory: (categoryId) =>
         set((state) =>
@@ -271,7 +299,7 @@ export const useFinance = create<Store>()(
         const state = get();
         const period = openPeriod(state);
         const value = clampMoney(amount);
-        if (!period || value <= 0 || value > periodSurplus(period)) return false;
+        if (!period || value <= 0 || value > periodSurplus(period)) return null;
         const existing = state.goals.find((goal) => goal.name === name);
         const goalId = existing?.id ?? uid("goal");
         const contributions = period.contributions ?? [];
@@ -288,7 +316,22 @@ export const useFinance = create<Store>()(
               : [...contributions, { goalId, amount: value }],
           } : entry),
         });
-        return true;
+        const savedGoal = get().goals.find((goal) => goal.id === goalId);
+        const savedLink = openPeriod(get())?.contributions?.find((entry) => entry.goalId === goalId);
+        return () => {
+          const current = get();
+          const active = openPeriod(current);
+          if (!savedGoal || !savedLink || active?.id !== period.id ||
+              current.goals.find((goal) => goal.id === goalId) !== savedGoal ||
+              active.contributions.find((entry) => entry.goalId === goalId) !== savedLink) return false;
+          set({
+            periods: current.periods.map((entry) => entry.id === active.id
+              ? returnContribution(entry, goalId, value) : entry),
+            goals: current.goals.flatMap((goal) =>
+              goal.id !== goalId ? [goal] : existing ? [existing] : []),
+          });
+          return true;
+        };
       },
 
       recoverUnlinkedSavings: (amount) => {
@@ -306,11 +349,19 @@ export const useFinance = create<Store>()(
 
       closePeriod: () => set((state) => ({ periods: state.periods.map((p) => (p.status === "open" ? { ...p, status: "closed" } : p)) })),
 
-      openNext: () => {
+      openNext: (copyRecurring = true, archiveOpen = false) => {
         set((state) => {
-          const range = currentQuincena();
-          const lastClosed = state.periods.find((p) => p.status === 'closed');
-          const defaultCategories: Category[] = lastClosed ? lastClosed.categories.map((category) => ({ ...category, paid: false })) : [
+          const active = openPeriod(state);
+          if (active && !archiveOpen) return state;
+          const current = currentQuincena();
+          const lastClosed = active ?? previousClosed(state.periods);
+          const periods = state.periods.map((period) => period.id === active?.id
+            ? { ...period, status: "closed" as const, closedAt: new Date().toISOString() }
+            : period);
+          const range = lastClosed && current.start <= lastClosed.end ? nextQuincena(lastClosed.end) : current;
+          const defaultCategories: Category[] = lastClosed
+            ? copyRecurring ? cloneCategories(lastClosed.categories.filter((category) => category.recurring !== false)) : []
+            : [
             { id: uid('cat'), name: 'Gastos del hogar', role: 'need', tone: 0, items: [] },
             { id: uid('cat'), name: 'Transporte', role: 'need', tone: 1, items: [] },
             { id: uid('cat'), name: 'Internet', role: 'need', tone: 2, items: [] },
@@ -319,7 +370,7 @@ export const useFinance = create<Store>()(
 
           return {
             periods: [
-              ...state.periods.filter(p => p.status !== 'open'), // Borramos la que está rota
+              ...periods,
               {
                 id: uid('period'),
                 start: range.start,

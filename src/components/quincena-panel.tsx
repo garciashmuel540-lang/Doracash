@@ -9,6 +9,9 @@ import { cn } from "@/lib/cn";
 import { ItemRow } from "@/components/item-row";
 import {
   categoryTotal,
+  categoryPaidAmount,
+  categoryDueDate,
+  paidRubrosTotal,
   daysLabel,
   daysUntil,
   estimatedBankBalance,
@@ -31,7 +34,8 @@ export function QuincenaPanel() {
   const setItemRole = useFinance((state) => state.setItemRole);
   const setCategoryRole = useFinance((state) => state.setCategoryRole);
   const setCategoryMoneyLocation = useFinance((state) => state.setCategoryMoneyLocation);
-  const setCategoryPaid = useFinance((state) => state.setCategoryPaid);
+  const setCategoryPayment = useFinance((state) => state.setCategoryPayment);
+  const setCategorySchedule = useFinance((state) => state.setCategorySchedule);
   const renameItem = useFinance((state) => state.renameItem);
   const addItem = useFinance((state) => state.addItem);
   const removeItem = useFinance((state) => state.removeItem);
@@ -42,6 +46,9 @@ export function QuincenaPanel() {
   const openNext = useFinance((state) => state.openNext);
 
   const period = periods.find((item) => item.status === "open");
+  const [rolloverOpen, setRolloverOpen] = useState(false);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
   const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addToSavingsOpen, setAddToSavingsOpen] = useState(false);
@@ -65,6 +72,30 @@ export function QuincenaPanel() {
         </Button>
       </div>
     );
+  }
+
+  const paymentCategory = period.categories.find((category) => category.id === paymentId);
+  const paymentRemaining = paymentCategory
+    ? Math.round((categoryTotal(paymentCategory) - categoryPaidAmount(paymentCategory)) * 1000) / 1000
+    : 0;
+  const upcoming = period.categories.flatMap((category) => {
+    const date = categoryDueDate(period.start, category.dueDay);
+    return date && categoryPaidAmount(category) < categoryTotal(category)
+      ? [{ category, date, days: daysUntil(date) }] : [];
+  }).filter((entry) => entry.days <= 3).sort((a, b) => a.date.localeCompare(b.date));
+
+  function announceChange(message: string, undo: (() => boolean) | null) {
+    if (!undo) return;
+    toast.success(message, {
+      duration: 7000,
+      action: {
+        label: "Deshacer",
+        onClick: () => {
+          if (undo()) toast.success("Cambio deshecho");
+          else toast.info("El registro cambió. Puedes ajustarlo desde su rubro o cuenta.");
+        },
+      },
+    });
   }
 
   const bankBalance = estimatedBankBalance(period);
@@ -115,12 +146,45 @@ export function QuincenaPanel() {
         </div>
       </section>
 
-      <dl aria-live="polite" aria-atomic="true" className="card mt-4 flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-3">
-        <dt className="text-sm font-medium">Saldo estimado</dt>
-        <dd className={cn("font-semibold tabular-nums", bankBalance < 0 ? "text-bad" : "text-gold")}>
-          <MoneyAmount value={bankBalance} />
-        </dd>
-      </dl>
+      <details className="card mt-4 px-4 py-3">
+        <summary className="cursor-pointer text-sm font-medium">
+          Saldo estimado <strong className="ml-2 tabular-nums"><MoneyAmount value={bankBalance} /></strong>
+        </summary>
+        <dl className="mt-3 space-y-2 border-t border-line pt-3 text-sm">
+          <div className="flex flex-wrap justify-between gap-x-2">
+            <dt>Ingreso neto</dt><dd><MoneyAmount value={period.income} /></dd>
+          </div>
+          <div className="flex flex-wrap justify-between gap-x-2">
+            <dt>Pagos registrados</dt><dd><MoneyAmount value={-paidRubrosTotal(period)} /></dd>
+          </div>
+          {period.categories.filter((category) => categoryPaidAmount(category) > 0).map((category) => (
+            <div key={category.id} className="flex flex-wrap justify-between gap-x-2 pl-3 text-xs text-muted">
+              <dt>{category.name} · {category.moneyLocation === "cash" ? "Efectivo" : "Cuenta"}</dt>
+              <dd><MoneyAmount value={-categoryPaidAmount(category)} /></dd>
+            </div>
+          ))}
+          <div className="flex flex-wrap justify-between gap-x-2">
+            <dt>Apartado a ahorros</dt><dd><MoneyAmount value={-(period.setAside || 0)} /></dd>
+          </div>
+        </dl>
+      </details>
+
+      {upcoming.length > 0 && (
+        <section className="card mt-4 px-4 py-3" aria-label="Recordatorios de vencimiento">
+          <h2 className="text-sm font-medium">Vencimientos</h2>
+          <ul className="mt-2 space-y-2 text-sm">
+            {upcoming.map(({ category, days: remainingDays }) => (
+              <li key={category.id} className="flex flex-wrap justify-between gap-x-3">
+                <span>{category.name}</span>
+                <span className={remainingDays < 0 ? "text-bad" : "text-muted"}>
+                  {remainingDays < 0 ? "Vencido" : remainingDays === 0 ? "Vence hoy" :
+                    remainingDays === 1 ? "Vence mañana" : `Vence en ${remainingDays} días`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <div><p className="page-eyebrow mb-1">CADA CÓRDOBA, EN SU LUGAR</p><h2 className="font-display text-2xl">Tus rubros</h2></div>
@@ -157,7 +221,9 @@ export function QuincenaPanel() {
           const hasOutflow = category.items.length === 0
             ? !isSaving
             : category.items.some((item) => (item.roleOverride ?? category.role) !== "life");
-          const paid = category.paid === true;
+          const paidAmount = categoryPaidAmount(category);
+          const paid = total > 0 && paidAmount >= total;
+          const dueDate = categoryDueDate(period.start, category.dueDay);
           
           return (
             <div key={category.id} className="category-card card overflow-hidden">
@@ -217,12 +283,15 @@ export function QuincenaPanel() {
                       className="size-4 shrink-0 accent-good"
                       aria-label={`Pagado: ${category.name}`}
                       checked={paid}
+                      disabled={total <= 0}
                       onChange={(event) => {
-                        setCategoryPaid(category.id, event.currentTarget.checked);
+                        const checked = event.currentTarget.checked;
+                        announceChange(checked ? "Pago registrado" : "Pago retirado",
+                          setCategoryPayment(category.id, checked ? "full" : 0));
                         playSelectionHaptic();
                       }}
                     />
-                    {paid ? "Pagado" : "Pendiente"}
+                    {paid ? "Pagado" : paidAmount > 0 ? "Pago parcial" : "Pendiente"}
                   </label>
                   <button
                     type="button"
@@ -240,6 +309,21 @@ export function QuincenaPanel() {
                 </div>
               </div>
               
+              {(total > 0 || dueDate) && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3 text-xs text-muted">
+                  {paidAmount > 0 && !paid && (
+                    <span>Pagado {formatMoney(paidAmount)} · Pendiente {formatMoney(total - paidAmount)}</span>
+                  )}
+                  {dueDate && <time dateTime={dueDate}>Vence {dueDate.slice(8)}/{dueDate.slice(5, 7)}</time>}
+                  {!paid && total > 0 && (
+                    <button type="button" className="min-h-11 font-medium text-gold" onClick={() => {
+                      setPaymentAmount(0);
+                      setPaymentId(category.id);
+                    }}>Registrar abono</button>
+                  )}
+                </div>
+              )}
+
               {open && (
                 <div id={`category-${category.id}`} className="category-content p-4 border-t border-line bg-surface-2/50">
                   <ul className="flex flex-col gap-4">
@@ -288,6 +372,26 @@ export function QuincenaPanel() {
                     </div>
                   )}
                   
+                  <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-line pt-3 text-sm">
+                    <label className="flex min-h-11 items-center gap-2">
+                      Vence cada mes
+                      <select className="rounded-lg bg-surface px-2 py-2" value={category.dueDay ?? ""}
+                        onChange={(event) => setCategorySchedule(category.id, {
+                          dueDay: event.currentTarget.value ? Number(event.currentTarget.value) : undefined,
+                        })}>
+                        <option value="">Sin fecha</option>
+                        {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+                          <option key={day} value={day}>Día {day}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex min-h-11 items-center gap-2">
+                      <input type="checkbox" className="accent-good" checked={category.recurring !== false}
+                        onChange={(event) => setCategorySchedule(category.id, { recurring: event.currentTarget.checked })} />
+                      Repetir en la próxima quincena
+                    </label>
+                  </div>
+
                   <Button variant="danger" className="mt-4 w-full" onClick={() => removeCategory(category.id)}>
                     <Trash2 className="size-4" /> Quitar rubro
                   </Button>
@@ -297,6 +401,47 @@ export function QuincenaPanel() {
           );
         })}
       </div>
+
+      <Button variant="ghost" className="mt-5" onClick={() => setRolloverOpen(true)}>
+        Cerrar y abrir otra quincena
+      </Button>
+      <Modal title="Abrir otra quincena" open={rolloverOpen} onOpenChange={setRolloverOpen}>
+        <div className="flex flex-col gap-3 p-5">
+          <p className="text-sm text-muted">
+            Esta quincena quedará en Historial. Los rubros recurrentes se copian con sus montos y vencimientos.
+          </p>
+          <Button onClick={() => {
+            openNext(true, true);
+            setRolloverOpen(false);
+            toast.success("Nueva quincena lista");
+          }}>Abrir con rubros recurrentes</Button>
+          <Button variant="ghost" onClick={() => {
+            openNext(false, true);
+            setRolloverOpen(false);
+            toast.success("Nueva quincena lista");
+          }}>Abrir sin copiar rubros</Button>
+        </div>
+      </Modal>
+      <Modal title={paymentCategory ? `Abono a ${paymentCategory.name}` : "Registrar abono"}
+        open={Boolean(paymentCategory)} onOpenChange={(open) => { if (!open) setPaymentId(null); }}>
+        {paymentCategory && (
+          <div className="flex flex-col gap-3 p-5">
+            <p className="text-sm text-muted">Pendiente {formatMoney(paymentRemaining)}</p>
+            <MoneyField label="Monto del abono" value={paymentAmount} onChange={setPaymentAmount} />
+            <Button disabled={paymentAmount <= 0 || paymentAmount > paymentRemaining} onClick={() => {
+              announceChange("Abono registrado", setCategoryPayment(paymentCategory.id,
+                categoryPaidAmount(paymentCategory) + paymentAmount));
+              setPaymentId(null);
+            }}>Guardar abono</Button>
+            {categoryPaidAmount(paymentCategory) > 0 && (
+              <Button variant="ghost" onClick={() => {
+                announceChange("Abonos retirados", setCategoryPayment(paymentCategory.id, 0));
+                setPaymentId(null);
+              }}>Quitar abonos registrados</Button>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <Modal title="Nuevo rubro" open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
         <div className="p-5 flex flex-col gap-4">
@@ -339,11 +484,12 @@ export function QuincenaPanel() {
                 className="w-full justify-between bg-surface-2"
                 disabled={savingsAmount <= 0 || savingsAmount > surplus}
                 onClick={() => {
-                  if (!transferToSavings(banco, savingsAmount)) {
+                  const undo = transferToSavings(banco, savingsAmount);
+                  if (!undo) {
                     toast.error("El monto supera el dinero disponible");
                     return;
                   }
-                  toast.success("Ahorro registrado y descontado del disponible");
+                  announceChange("Ahorro registrado", undo);
                   setAddToSavingsOpen(false);
                 }}
               >
