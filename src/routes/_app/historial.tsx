@@ -51,8 +51,11 @@ function HistorialPage() {
                   <div><dt className="text-muted text-xs">Libre</dt><dd className="font-medium"><MoneyAmount value={surplus} /></dd></div>
                 </dl>
 
-                <section className="mt-5 border-t border-line pt-4" aria-label="Resumen de movimientos">
-                  <h3 className="font-medium text-sm">Resumen de movimientos</h3>
+                <details className="group mt-4 border-t border-line" aria-label="Resumen de movimientos">
+                  <summary className="min-h-11 cursor-pointer rounded-lg py-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+                    <span className="group-open:hidden">Ver movimientos</span>
+                    <span className="hidden group-open:inline">Ocultar movimientos</span>
+                  </summary>
                   <p className="text-xs text-muted mt-1">Conceptos registrados al cerrar la quincena.</p>
                   <div className="flex flex-wrap justify-between items-start gap-2 py-4 text-sm">
                     <span>Ingreso de la quincena</span>
@@ -96,7 +99,7 @@ function HistorialPage() {
                       <span className="font-medium whitespace-nowrap"><MoneyAmount value={period.setAside} /></span>
                     </div>
                   ) : null}
-                </section>
+                </details>
               </article>
             );
           })}
