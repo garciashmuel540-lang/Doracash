@@ -10,24 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
-import { Route as PagarRouteImport } from './routes/pagar'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppAhorroRouteImport } from './routes/_app/ahorro'
 import { Route as AppHistorialRouteImport } from './routes/_app/historial'
 import { Route as AppIaRouteImport } from './routes/_app/ia'
 import { Route as AppPlanRouteImport } from './routes/_app/plan'
-import { Route as AppTarjetasRouteImport } from './routes/_app/tarjetas'
 import { Route as ApiChatIaRouteImport } from './routes/api/chat-ia'
 import { Route as ApiEmailHookRouteImport } from './routes/api/email-hook'
 import { Route as ApiParseExpenseRouteImport } from './routes/api/parse-expense'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagarRoute = PagarRouteImport.update({
-  id: '/pagar',
-  path: '/pagar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -55,11 +48,6 @@ const AppPlanRoute = AppPlanRouteImport.update({
   path: '/plan',
   getParentRoute: () => AppRoute,
 } as any)
-const AppTarjetasRoute = AppTarjetasRouteImport.update({
-  id: '/tarjetas',
-  path: '/tarjetas',
-  getParentRoute: () => AppRoute,
-} as any)
 const ApiChatIaRoute = ApiChatIaRouteImport.update({
   id: '/api/chat-ia',
   path: '/api/chat-ia',
@@ -78,23 +66,19 @@ const ApiParseExpenseRoute = ApiParseExpenseRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/pagar': typeof PagarRoute
   '/ahorro': typeof AppAhorroRoute
   '/historial': typeof AppHistorialRoute
   '/ia': typeof AppIaRoute
   '/plan': typeof AppPlanRoute
-  '/tarjetas': typeof AppTarjetasRoute
   '/api/chat-ia': typeof ApiChatIaRoute
   '/api/email-hook': typeof ApiEmailHookRoute
   '/api/parse-expense': typeof ApiParseExpenseRoute
 }
 export interface FileRoutesByTo {
-  '/pagar': typeof PagarRoute
   '/ahorro': typeof AppAhorroRoute
   '/historial': typeof AppHistorialRoute
   '/ia': typeof AppIaRoute
   '/plan': typeof AppPlanRoute
-  '/tarjetas': typeof AppTarjetasRoute
   '/api/chat-ia': typeof ApiChatIaRoute
   '/api/email-hook': typeof ApiEmailHookRoute
   '/api/parse-expense': typeof ApiParseExpenseRoute
@@ -103,12 +87,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/pagar': typeof PagarRoute
   '/_app/ahorro': typeof AppAhorroRoute
   '/_app/historial': typeof AppHistorialRoute
   '/_app/ia': typeof AppIaRoute
   '/_app/plan': typeof AppPlanRoute
-  '/_app/tarjetas': typeof AppTarjetasRoute
   '/api/chat-ia': typeof ApiChatIaRoute
   '/api/email-hook': typeof ApiEmailHookRoute
   '/api/parse-expense': typeof ApiParseExpenseRoute
@@ -118,23 +100,19 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/pagar'
     | '/ahorro'
     | '/historial'
     | '/ia'
     | '/plan'
-    | '/tarjetas'
     | '/api/chat-ia'
     | '/api/email-hook'
     | '/api/parse-expense'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/pagar'
     | '/ahorro'
     | '/historial'
     | '/ia'
     | '/plan'
-    | '/tarjetas'
     | '/api/chat-ia'
     | '/api/email-hook'
     | '/api/parse-expense'
@@ -142,12 +120,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
-    | '/pagar'
     | '/_app/ahorro'
     | '/_app/historial'
     | '/_app/ia'
     | '/_app/plan'
-    | '/_app/tarjetas'
     | '/api/chat-ia'
     | '/api/email-hook'
     | '/api/parse-expense'
@@ -156,7 +132,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
-  PagarRoute: typeof PagarRoute
   ApiChatIaRoute: typeof ApiChatIaRoute
   ApiEmailHookRoute: typeof ApiEmailHookRoute
   ApiParseExpenseRoute: typeof ApiParseExpenseRoute
@@ -169,13 +144,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pagar': {
-      id: '/pagar'
-      path: '/pagar'
-      fullPath: '/pagar'
-      preLoaderRoute: typeof PagarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -213,13 +181,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPlanRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/tarjetas': {
-      id: '/_app/tarjetas'
-      path: '/tarjetas'
-      fullPath: '/tarjetas'
-      preLoaderRoute: typeof AppTarjetasRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/api/chat-ia': {
       id: '/api/chat-ia'
       path: '/api/chat-ia'
@@ -249,7 +210,6 @@ interface AppRouteChildren {
   AppHistorialRoute: typeof AppHistorialRoute
   AppIaRoute: typeof AppIaRoute
   AppPlanRoute: typeof AppPlanRoute
-  AppTarjetasRoute: typeof AppTarjetasRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -258,7 +218,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppHistorialRoute: AppHistorialRoute,
   AppIaRoute: AppIaRoute,
   AppPlanRoute: AppPlanRoute,
-  AppTarjetasRoute: AppTarjetasRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
@@ -266,7 +225,6 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
-  PagarRoute: PagarRoute,
   ApiChatIaRoute: ApiChatIaRoute,
   ApiEmailHookRoute: ApiEmailHookRoute,
   ApiParseExpenseRoute: ApiParseExpenseRoute,
