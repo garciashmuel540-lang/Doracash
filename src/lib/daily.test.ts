@@ -1,0 +1,110 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { allPaymentsComplete, categoryPendingAmount, categoriesForNextPeriod, estimatedBankBalance, periodSurplus, type Period } from "./finance.ts";
+import { balanceFlow, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, todayInManagua, validDailyFields } from "./daily.ts";
+const records = new Map<string, string>();
+Object.defineProperty(globalThis, "window", { configurable: true, value: {
+  localStorage: {
+    getItem: (key: string) => records.get(key) ?? null,
+    setItem: (key: string, value: string) => records.set(key, value),
+    removeItem: (key: string) => records.delete(key),
+  },
+} });
+const { useFinance, sanitizeData } = await import("./store.ts");
+
+const today = todayInManagua();
+function start(): Period {
+  const period: Period = { id: "test", start: today, end: today, income: 1000, status: "open", contributions: [], setAside: 0,
+    categories: [{ id: "food", name: "Comida", role: "need", tone: 0, items: [{ id: "i", name: "Comida", amount: 200, max: 250 }] }] };
+  useFinance.setState({ periods: [period] });
+  return period;
+}
+const get = () => useFinance.getState();
+const current = () => get().periods[0];
+const input = { amount: 80, name: "Almuerzo", date: today, location: "cash" as const };
+
+test("quick expense is paid once, reversible, nonrecurring and duplicate-aware", () => {
+  start();
+  assert.deepEqual(parseExpense("C$ 80,50 almuerzo"), { amount: 80.5, name: "almuerzo" });
+  assert.equal(parseExpense("80"), null);
+  const m = get().recordExpense("test", input, false);
+  assert.equal(typeof m, "object");
+  assert.equal(periodSurplus(current()), 720);
+  assert.equal(estimatedBankBalance(current()), 920);
+  assert.equal(get().recordExpense("test", { ...input, name: " ALMUÉRZO " }, false), "duplicate");
+  assert.equal(typeof get().recordExpense("test", input, true), "object");
+  assert.equal(repeatedCharges(current().movements!, "Almuerzo", 80, today).length, 2);
+  assert.equal(duplicateIds(current().movements!).size, 2);
+  assert.equal(categoriesForNextPeriod(current(), true).length, 1);
+  assert.equal(allPaymentsComplete({ ...current(), categories: current().categories.slice(1) }), false);
+  assert.ok(typeof m === "object" && get().undoMovement("test", m.id));
+  assert.equal(estimatedBankBalance(current()), 920);
+  assert.ok(typeof m === "object" && !get().undoMovement("test", m.id));
+});
+
+test("planned payment respects the budget, prevents overpayment and protects later edits during undo", () => {
+  start();
+  const m = get().recordExpense("test", { ...input, categoryId: "food", location: "account" }, false);
+  assert.equal(typeof m, "object");
+  assert.equal(periodSurplus(current()), 800);
+  assert.equal(estimatedBankBalance(current()), 920);
+  assert.equal(categoryPendingAmount(current().categories[0]), 120);
+  assert.equal(get().recordExpense("test", { ...input, amount: 140, categoryId: "food", location: "account" }, true), "invalid");
+  const undo2 = get().setCategoryPayment("food", "full");
+  assert.ok(typeof m === "object" && !get().undoMovement("test", m.id));
+  assert.ok(undo2?.());
+  assert.ok(typeof m === "object" && get().undoMovement("test", m.id));
+  assert.equal(categoryPendingAmount(current().categories[0]), 200);
+});
+
+test("reconciliation keeps a stable baseline, respects transfers and preserves discrepancies after reload", async () => {
+  start();
+  assert.ok(get().checkBalances("test", { account: 900, cash: 150 }));
+  get().recordExpense("test", input, false);
+  const transfer = get().recordTransfer("test", "account", 200)!;
+  const baseline = current().reconciliation!.first;
+  assert.deepEqual(expectedBalances(baseline, balanceFlow(current())), { account: 700, cash: 270 });
+  assert.equal(periodSurplus(current()), 720);
+  get().checkBalances("test", { account: 700, cash: 260 });
+  const backup = JSON.parse(JSON.stringify({ periods: [current()], goals: [], theme: "dark" }));
+  assert.equal(sanitizeData(backup), true);
+  get().importFinance(backup);
+  await useFinance.persist.rehydrate();
+  assert.equal(current().reconciliation!.last.counted.cash, 260);
+  assert.equal(expectedBalances(current().reconciliation!.first, balanceFlow(current())).cash, 270);
+  assert.ok(get().undoMovement("test", transfer.id));
+  assert.equal(expectedBalances(baseline, balanceFlow(current())).cash, 70);
+  assert.equal(validDailyFields({ ...current(), payday: "2026-02-31" }), false);
+});
+
+test("calendar includes overdue, partial and same-day dues; excludes paid and later charges", () => {
+  const p = start();
+  p.start = "2026-11-16"; p.end = "2026-11-30"; p.payday = "2026-12-01";
+  const c = p.categories[0];
+  p.categories = [
+    { ...c, dueDay: 20, paidAmount: 50 },
+    { ...c, id: "over", carriedDueDate: "2026-11-10" },
+    { ...c, id: "onpay", dueDay: 1 },
+    { ...c, id: "later", dueDay: 3 },
+    { ...c, id: "paid", dueDay: 18, paid: true },
+    { ...c, id: "undated" },
+  ];
+  const f = forecast(p, "2026-11-18");
+  assert.deepEqual(f.rows.map(r => r.id), ["over", "food", "onpay"]);
+  assert.deepEqual(f.rows.map(r => r.balance), [550, 400, 200]);
+  assert.equal(f.undated, 200);
+  assert.equal(f.days, 13);
+  assert.equal(f.daily, 0);
+});
+
+test("changing a rubro's source keeps previous payments in their original location", () => {
+  start();
+  get().setCategoryPayment("food", 50);
+  get().setCategoryMoneyLocation("food", "cash");
+  get().setCategoryPayment("food", 120);
+  assert.deepEqual(balanceFlow(current()), { account: 950, cash: -70 });
+  const undo = get().setCategoryPayment("food", 20);
+  assert.deepEqual(balanceFlow(current()), { account: 980, cash: 0 });
+  assert.ok(undo?.());
+  assert.deepEqual(balanceFlow(current()), { account: 950, cash: -70 });
+});

@@ -597,3 +597,23 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   .material-ripple { display: none; }
 }
+
+.daily-tools { margin-top: 16px; padding: 16px; }
+.daily-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.daily-actions > button { flex: 1 1 auto; padding-inline: 12px; }
+.daily-tools summary, .daily-form summary { cursor: pointer; padding-block: 10px; font-size: 14px; font-weight: 600; }
+.daily-form { display: grid; gap: 16px; }
+.daily-form label { display: grid; gap: 6px; font-size: 14px; }
+.daily-form input, .daily-form select { min-width: 0; width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); padding: 9px 12px; color: var(--fg); font-size: 16px; }
+.daily-form p, .daily-form small, .daily-row small { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.daily-form h3, .daily-note strong { font-weight: 650; }
+.daily-note { background: var(--surface-2); padding: 12px 14px; border-radius: 12px; }
+.daily-switch { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 14px; padding: 3px; }
+.daily-switch button { flex: 1; min-height: 44px; border-radius: 10px; }
+.daily-switch [aria-pressed="true"], .daily-chip { background: var(--selected); color: var(--selected-ink); }
+.daily-chip { padding: 8px 12px; font-size: 13px; border-radius: 12px; overflow-wrap: anywhere; }
+.daily-row { display: flex; gap: 8px; align-items: center; padding-block: 8px; border-top: 1px solid var(--line); font-size: 14px; }
+.daily-row div:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.daily-row small { display: block; }
+.daily-row .text-bad { color: var(--bad); }
+.daily-undo { display: grid; place-items: center; min-width: 44px; min-height: 44px; color: var(--gold); }

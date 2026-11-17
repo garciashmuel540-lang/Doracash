@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell";
 import { useFinance } from "@/lib/store";
 import {
-  categoryPaidAmount, categoryPendingAmount, categoryTotal, formatRange,
+  categoryPaidAmount, categoryPendingAmount, categoryTotal, formatRange, formatMoney,
   periodExpenses, periodSurplus, roleAmount, sortedPeriods,
 } from "@/lib/finance";
 
@@ -100,6 +100,13 @@ function HistorialPage() {
                     </div>
                   ) : null}
                 </details>
+                {Boolean(period.movements?.length) && <details className="mt-2 border-t border-line">
+                  <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Actividad registrada ({period.movements!.length})</summary>
+                  {[...period.movements!].reverse().map(m => <div className="daily-row" key={m.id}>
+                    <div><strong>{m.name}</strong><small>{m.date.slice(8)}/{m.date.slice(5, 7)} · {m.location === "cash" ? "Efectivo" : "Cuenta"}</small></div>
+                    {m.kind === "transfer" ? <span>Traslado · {formatMoney(m.amount)}</span> : <MoneyAmount value={-m.amount} />}
+                  </div>)}
+                </details>}
               </article>
             );
           })}

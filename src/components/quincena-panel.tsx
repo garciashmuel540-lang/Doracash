@@ -6,6 +6,8 @@ import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
 import { PageHeader } from "@/components/shell";
 import { playSelectionHaptic } from "@/lib/haptics";
 import { cn } from "@/lib/cn";
+import { repeatedCharges, todayInManagua } from "@/lib/daily";
+import { DailyTools } from "./daily-tools";
 import { ItemRow } from "@/components/item-row";
 import {
   categoryTotal,
@@ -52,6 +54,7 @@ export function QuincenaPanel() {
   const [rolloverOpen, setRolloverOpen] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
   const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addToSavingsOpen, setAddToSavingsOpen] = useState(false);
@@ -92,7 +95,9 @@ export function QuincenaPanel() {
     );
   }
 
+  const quickIds = new Set(period.movements?.filter(m => m.kind === "expense").map(m => m.categoryId));
   const paymentCategory = period.categories.find((category) => category.id === paymentId);
+  const repeatedAbono = paymentCategory && paymentAmount > 0 && repeatedCharges(period.movements ?? [], paymentCategory.name, paymentAmount, todayInManagua()).length > 0;
   const paymentRemaining = paymentCategory
     ? categoryPendingAmount(paymentCategory)
     : 0;
@@ -164,6 +169,8 @@ export function QuincenaPanel() {
         </div>
       </section>
 
+      <DailyTools key={period.id} period={period} />
+
       <details className="bank-summary card mt-4 px-4 py-3">
         <summary className="cursor-pointer text-sm font-medium">
           Saldo estimado <strong className="ml-2 tabular-nums"><MoneyAmount value={bankBalance} /></strong>
@@ -232,7 +239,7 @@ export function QuincenaPanel() {
       </dl>
 
       <div className="rubros-list mt-4 grid gap-3">
-        {period.categories.map((category) => {
+        {period.categories.filter(c => !quickIds.has(c.id)).map((category) => {
           const total = categoryTotal(category);
           const open = openIds[category.id] ?? false;
           const isSaving = category.role === "life";
@@ -335,6 +342,7 @@ export function QuincenaPanel() {
                   {dueDate && <time dateTime={dueDate}>Vence {dueDate.slice(8)}/{dueDate.slice(5, 7)}</time>}
                   {!paid && total > 0 && (
                     <Button type="button" variant="ghost" className="px-4 text-xs leading-snug text-gold [overflow-wrap:anywhere]" onClick={() => {
+                      setDuplicateConfirmed(false);
                       setPaymentAmount(0);
                       setPaymentId(category.id);
                     }}>Registrar abono</Button>
@@ -450,12 +458,14 @@ export function QuincenaPanel() {
         {paymentCategory && (
           <div className="flex flex-col gap-3 p-5">
             <p className="text-sm text-muted">Pendiente {formatMoney(paymentRemaining)}</p>
-            <MoneyField label="Monto del abono" value={paymentAmount} onChange={setPaymentAmount} />
+            <MoneyField label="Monto del abono" value={paymentAmount} onChange={v => { setDuplicateConfirmed(false); setPaymentAmount(v); }} />
+            {repeatedAbono && <p className="daily-note text-sm" role="status">Ya hay un abono por ese monto y concepto hoy.</p>}
             <Button disabled={paymentAmount <= 0 || paymentAmount > paymentRemaining} onClick={() => {
+              if (repeatedAbono && !duplicateConfirmed) { setDuplicateConfirmed(true); return; }
               announceChange("Abono registrado", setCategoryPayment(paymentCategory.id,
                 categoryPaidAmount(paymentCategory) + paymentAmount));
               setPaymentId(null);
-            }}>Guardar abono</Button>
+            }}>{repeatedAbono && duplicateConfirmed ? "Confirmar otro abono igual" : "Guardar abono"}</Button>
             {categoryPaidAmount(paymentCategory) > 0 && (
               <Button variant="ghost" onClick={() => {
                 announceChange("Abonos retirados", setCategoryPayment(paymentCategory.id, 0));

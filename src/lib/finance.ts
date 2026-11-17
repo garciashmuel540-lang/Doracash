@@ -1,3 +1,4 @@
+import type { Movement, Reconciliation } from "./daily";
 export type Role = "need" | "life" | "debt";
 export type MoneyLocation = "account" | "cash";
 export type GoalKind = "emergency" | "custom";
@@ -16,6 +17,7 @@ export type Category = {
   role: Role;
   tone: number;
   moneyLocation?: MoneyLocation;
+  legacyPaidLocation?: MoneyLocation;
   paid?: boolean;
   paidAmount?: number;
   dueDay?: number;
@@ -40,6 +42,9 @@ export type Period = {
   setAside: number;
   contributions: Contribution[];
   closedAt?: string;
+  movements?: Movement[];
+  reconciliation?: Reconciliation;
+  payday?: string;
 };
 
 export type Goal = {
@@ -242,7 +247,8 @@ export function categoryPendingAmount(category: Category) {
 }
 
 export function allPaymentsComplete(period: Period) {
-  return period.categories.some((category) => categoryTotal(category) > 0)
+  const quickIds = new Set(period.movements?.filter(m => m.kind === "expense").map(m => m.categoryId));
+  return period.categories.some((category) => !quickIds.has(category.id) && categoryTotal(category) > 0)
     && period.categories.every((category) => categoryPendingAmount(category) === 0);
 }
 
@@ -410,6 +416,7 @@ export function cloneCategories(categories: Category[]): Category[] {
     ...category,
     id: uid("cat"),
     paid: false,
+    legacyPaidLocation: undefined,
     paidAmount: 0,
     items: category.items.map((item) => ({ ...item, id: uid("item") })),
   }));

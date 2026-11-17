@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 import {
   clampMoney,
   categoryTotal,
+  categoryPaidAmount,
+  categoryPendingAmount,
   categoriesForNextPeriod,
   allPaymentsComplete,
   nextQuincena,
@@ -21,11 +23,18 @@ import {
   type MoneyLocation,
   type Period,
   type Role,
-} from "./finance";
+} from "./finance.ts";
+import { balanceFlow, repeatedCharges, rounded, todayInManagua, validDailyFields, validDate, type Balances, type Movement } from "./daily.ts";
 
 type Undo = () => boolean;
 
+type ExpenseInput = { name: string; amount: number; date: string; location: MoneyLocation; categoryId?: string };
 type Store = {
+  recordExpense: (periodId: string, entry: ExpenseInput, allowDuplicate: boolean) => "duplicate" | "invalid" | Movement;
+  undoMovement: (periodId: string, id: string) => boolean;
+  recordTransfer: (periodId: string, from: MoneyLocation, amount: number) => Movement | null;
+  checkBalances: (periodId: string, counted: Balances) => boolean;
+  setPayday: (periodId: string, date: string) => boolean;
   periods: Period[];
   goals: Goal[];
   theme: Data["theme"];
@@ -214,34 +223,101 @@ export const useFinance = create<Store>()(
           mapOpen(state, (period) => ({
             ...period,
             categories: period.categories.map((category) =>
-              category.id === categoryId ? { ...category, moneyLocation } : category
+              category.id === categoryId ? { ...category, moneyLocation,
+                legacyPaidLocation: category.legacyPaidLocation ?? (categoryPaidAmount(category) > 0 ? category.moneyLocation ?? "account" : undefined),
+              } : category
             ),
           }))
         ),
 
+      recordExpense: (periodId, input, allowDuplicate) => {
+        const state = get();
+        const period = openPeriod(state);
+        const amount = clampMoney(input.amount);
+        const name = input.name.trim();
+        if (period?.id !== periodId || !name || name.length > 40 || amount <= 0 || !validDate(input.date) ||
+            input.date < period.start.slice(0, 10) || input.date > period.end.slice(0, 10) || input.date > todayInManagua()) return "invalid";
+        const movements = period.movements ?? [];
+        if (!allowDuplicate && repeatedCharges(movements, name, amount, input.date).length) return "duplicate";
+        const target = input.categoryId ? period.categories.find(c => c.id === input.categoryId) : undefined;
+        if (input.categoryId && (!target || amount > categoryPendingAmount(target) || input.location !== (target.moneyLocation ?? "account"))) return "invalid";
+        const categoryId = target?.id ?? uid("cat");
+        const before = target ? categoryPaidAmount(target) : 0;
+        const after = rounded(before + amount);
+        const movement: Movement = { id: uid("mov"), name, amount, date: input.date, location: input.location,
+          kind: target ? "payment" : "expense", categoryId, before, after };
+        const categories: Category[] = target
+          ? period.categories.map(c => c.id === categoryId ? { ...c, paidAmount: after, paid: after >= categoryTotal(c) } : c)
+          : [...period.categories, { id: categoryId, name, role: "need", tone: 0, moneyLocation: input.location,
+              recurring: false, paid: true, paidAmount: amount, items: [{ id: uid("item"), name, amount, max: Math.max(100, amount) }] }];
+        set(mapOpen(state, p => ({ ...p, movements: [...movements, movement], categories })));
+        return movement;
+      },
+
+      recordTransfer: (periodId, from, amount) => {
+        const state = get();
+        const period = openPeriod(state);
+        if (period?.id !== periodId || clampMoney(amount) <= 0) return null;
+        const movement: Movement = { id: uid("mov"), kind: "transfer", date: todayInManagua(),
+          name: from === "account" ? "Retiro de efectivo" : "Depósito a cuenta", location: from, amount: clampMoney(amount) };
+        set(mapOpen(state, p => ({ ...p, movements: [...(p.movements ?? []), movement] })));
+        return movement;
+      },
+
+      checkBalances: (periodId, counted) => {
+        const state = get();
+        const period = openPeriod(state);
+        if (period?.id !== periodId || (!Number.isFinite(counted.account) || !Number.isFinite(counted.cash) || counted.cash < 0)) return false;
+        const check = { date: todayInManagua(), counted: { ...counted }, flow: balanceFlow(period) };
+        set(mapOpen(state, p => ({ ...p, reconciliation: { first: p.reconciliation?.first ?? check, last: check } })));
+        return true;
+      },
+
+      setPayday: (periodId, payday) => {
+        const state = get();
+        if (openPeriod(state)?.id !== periodId || !validDate(payday)) return false;
+        set(mapOpen(state, p => ({ ...p, payday })));
+        return true;
+      },
+
+      undoMovement: (periodId, id) => {
+        const state = get();
+        const period = openPeriod(state);
+        if (period?.id !== periodId) return false;
+        const movements = period.movements ?? [];
+        const index = movements.findIndex(m => m.id === id);
+        if (index < 0) return false;
+        const m = movements[index];
+        let categories = period.categories;
+        if (m.kind !== "transfer") {
+          const category = categories.find(c => c.id === m.categoryId);
+          if (!category || categoryPaidAmount(category) !== m.after ||
+              movements.slice(index + 1).some(later => later.categoryId === category.id)) return false;
+          if (m.kind === "expense") categories = categories.filter(c => c !== category);
+          else {
+            const previous = m.before ?? 0;
+            if (previous > categoryTotal(category)) return false;
+            categories = categories.map(c => c !== category ? c : { ...c, paidAmount: previous, paid: previous > 0 && previous === categoryTotal(c) });
+          }
+        }
+        set(mapOpen(state, p => ({ ...p, categories, movements: movements.filter(entry => entry.id !== id) })));
+        return true;
+      },
+
       setCategoryPayment: (categoryId, payment) => {
         const state = get();
         const period = openPeriod(state);
-        const category = period?.categories.find((entry) => entry.id === categoryId);
+        const category = period?.categories.find(c => c.id === categoryId);
         if (!period || !category) return null;
         const total = categoryTotal(category);
-        const paidAmount = payment === "full" ? total : Math.min(total, clampMoney(payment));
-        const paid = total > 0 && paidAmount >= total;
-        const apply = (current: Store, fields: Pick<Category, "paid" | "paidAmount">) =>
-          mapOpen(current, (entry) => entry.id !== period.id ? entry : {
-            ...entry,
-            categories: entry.categories.map((item) => item.id === categoryId ? { ...item, ...fields } : item),
-          });
-        set(apply(state, { paid, paidAmount }));
-        const saved = openPeriod(get())?.categories.find((entry) => entry.id === categoryId);
-        return () => {
-          const current = get();
-          const active = openPeriod(current);
-          if (!saved || active?.id !== period.id ||
-              active.categories.find((entry) => entry.id === categoryId) !== saved) return false;
-          set(apply(current, { paid: category.paid, paidAmount: category.paidAmount }));
-          return true;
-        };
+        const before = categoryPaidAmount(category);
+        const after = payment === "full" ? total : Math.min(total, clampMoney(payment));
+        if (before === after) return null;
+        const m: Movement = { id: uid("mov"), kind: "payment", date: todayInManagua(), name: category.name,
+          categoryId, before, after, amount: rounded(after - before), location: category.moneyLocation ?? "account" };
+        set(mapOpen(state, p => ({ ...p, movements: [...(p.movements ?? []), m],
+          categories: p.categories.map(c => c === category ? { ...c, paidAmount: after, paid: total > 0 && after === total } : c) })));
+        return () => get().undoMovement(period.id, m.id);
       },
 
       setCategorySchedule: (categoryId, schedule) =>
@@ -255,6 +331,7 @@ export const useFinance = create<Store>()(
           mapOpen(state, (period) => ({
             ...period,
             categories: period.categories.filter((c) => c.id !== categoryId),
+            movements: period.movements?.filter(m => m.categoryId !== categoryId),
           }))
         ),
 
@@ -406,6 +483,7 @@ export function sanitizeData(data: any): boolean {
     typeof period.start === "string" &&
     typeof period.end === "string" &&
     Number.isFinite(Number(period.income)) &&
+    validDailyFields(period) &&
     Array.isArray(period.categories) &&
     period.categories.every((category: any) =>
       category &&
