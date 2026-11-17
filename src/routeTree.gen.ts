@@ -15,6 +15,7 @@ import { Route as AppAhorroRouteImport } from './routes/_app/ahorro'
 import { Route as AppHistorialRouteImport } from './routes/_app/historial'
 import { Route as AppIaRouteImport } from './routes/_app/ia'
 import { Route as AppPlanRouteImport } from './routes/_app/plan'
+import { Route as AppTarjetasRouteImport } from './routes/_app/tarjetas'
 import { Route as ApiChatIaRouteImport } from './routes/api/chat-ia'
 import { Route as ApiEmailHookRouteImport } from './routes/api/email-hook'
 import { Route as ApiParseExpenseRouteImport } from './routes/api/parse-expense'
@@ -48,6 +49,11 @@ const AppPlanRoute = AppPlanRouteImport.update({
   path: '/plan',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTarjetasRoute = AppTarjetasRouteImport.update({
+  id: '/tarjetas',
+  path: '/tarjetas',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiChatIaRoute = ApiChatIaRouteImport.update({
   id: '/api/chat-ia',
   path: '/api/chat-ia',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/historial': typeof AppHistorialRoute
   '/ia': typeof AppIaRoute
   '/plan': typeof AppPlanRoute
+  '/tarjetas': typeof AppTarjetasRoute
   '/api/chat-ia': typeof ApiChatIaRoute
   '/api/email-hook': typeof ApiEmailHookRoute
   '/api/parse-expense': typeof ApiParseExpenseRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/historial': typeof AppHistorialRoute
   '/ia': typeof AppIaRoute
   '/plan': typeof AppPlanRoute
+  '/tarjetas': typeof AppTarjetasRoute
   '/api/chat-ia': typeof ApiChatIaRoute
   '/api/email-hook': typeof ApiEmailHookRoute
   '/api/parse-expense': typeof ApiParseExpenseRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/_app/historial': typeof AppHistorialRoute
   '/_app/ia': typeof AppIaRoute
   '/_app/plan': typeof AppPlanRoute
+  '/_app/tarjetas': typeof AppTarjetasRoute
   '/api/chat-ia': typeof ApiChatIaRoute
   '/api/email-hook': typeof ApiEmailHookRoute
   '/api/parse-expense': typeof ApiParseExpenseRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/historial'
     | '/ia'
     | '/plan'
+    | '/tarjetas'
     | '/api/chat-ia'
     | '/api/email-hook'
     | '/api/parse-expense'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/historial'
     | '/ia'
     | '/plan'
+    | '/tarjetas'
     | '/api/chat-ia'
     | '/api/email-hook'
     | '/api/parse-expense'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/_app/historial'
     | '/_app/ia'
     | '/_app/plan'
+    | '/_app/tarjetas'
     | '/api/chat-ia'
     | '/api/email-hook'
     | '/api/parse-expense'
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPlanRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/tarjetas': {
+      id: '/_app/tarjetas'
+      path: '/tarjetas'
+      fullPath: '/tarjetas'
+      preLoaderRoute: typeof AppTarjetasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/chat-ia': {
       id: '/api/chat-ia'
       path: '/api/chat-ia'
@@ -210,6 +229,7 @@ interface AppRouteChildren {
   AppHistorialRoute: typeof AppHistorialRoute
   AppIaRoute: typeof AppIaRoute
   AppPlanRoute: typeof AppPlanRoute
+  AppTarjetasRoute: typeof AppTarjetasRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -218,6 +238,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHistorialRoute: AppHistorialRoute,
   AppIaRoute: AppIaRoute,
   AppPlanRoute: AppPlanRoute,
+  AppTarjetasRoute: AppTarjetasRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

@@ -1,16 +1,19 @@
 import { createContext, useContext, useEffect, useState, type CSSProperties } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { WalletCards, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
+import { WalletCards, CreditCard, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
 import { FinancialCompanions } from "./financial-companions";
+import { useCards } from "@/lib/cards-store";
+import { normalizeCardList } from "@/lib/cards";
 import { MaterialMotion } from "./material-motion";
 import { Button, Modal, IconButton } from "@/components/ui";
 
 const NAV = [
   { to: "/", label: "Quincena", icon: WalletCards, exact: true },
   { to: "/ahorro", label: "Ahorros", icon: PiggyBank },
+  { to: "/tarjetas", label: "Tarjetas", icon: CreditCard },
   { to: "/historial", label: "Historial", icon: History },
   { to: "/plan", label: "Plan", icon: LineChart },
   { to: "/ia", label: "Asistente", icon: Sparkles },
@@ -38,7 +41,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#101411" : "#f6f7f2");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#141d28" : "#edf2f7");
   }, [theme]);
 
   return (
@@ -101,7 +104,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.35rem)" }}
         aria-label="Secciones móviles"
       >
-        <div className="mobile-nav-track mx-auto grid max-w-lg grid-cols-5 items-center px-2 py-2" style={{ "--nav-index": Math.max(0, NAV.findIndex(item => item.exact ? path === item.to : path.startsWith(item.to))) } as CSSProperties}>
+        <div className="mobile-nav-track mx-auto grid max-w-lg grid-cols-6 items-center px-2 py-2" style={{ "--nav-count": NAV.length, "--nav-index": Math.max(0, NAV.findIndex(item => item.exact ? path === item.to : path.startsWith(item.to))) } as CSSProperties}>
           <span className="nav-indicator" aria-hidden="true" />
           {NAV.map((item) => {
             const active = item.exact ? path === item.to : path.startsWith(item.to);
@@ -196,7 +199,7 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
 
   function download() {
     const { periods, goals, theme, introDismissed } = useFinance.getState();
-    const blob = new Blob([JSON.stringify({ version: 1, periods, goals, theme, introDismissed }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ version: 1, periods, goals, theme, introDismissed, cards: useCards.getState().cards }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -216,7 +219,13 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
           setError("Ese archivo no parece un respaldo de Doracash.");
           return;
         }
+        const cards = Object.hasOwn(parsed, "cards") ? normalizeCardList(parsed.cards) : null;
+        if (Object.hasOwn(parsed, "cards") && !cards) {
+          setError("Las referencias de tarjetas del respaldo no son válidas.");
+          return;
+        }
         importFinance(parsed);
+        if (cards) useCards.getState().replace(cards);
         setError("");
         onOpenChange(false);
         toast.success("Respaldo restaurado");
@@ -240,7 +249,7 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
           <div className="card p-4">
             <p className="text-sm text-pretty">Se borra lo que cargaste y vuelve el punto de partida.</p>
             <div className="mt-3 flex gap-2">
-              <Button variant="primary" onClick={() => { reset(); setConfirmReset(false); onOpenChange(false); toast.success("Listo, volviste al inicio"); }}>Sí, reiniciar</Button>
+              <Button variant="primary" onClick={() => { reset(); useCards.getState().replace([]); setConfirmReset(false); onOpenChange(false); toast.success("Listo, volviste al inicio"); }}>Sí, reiniciar</Button>
               <Button variant="ghost" onClick={() => setConfirmReset(false)}>Cancelar</Button>
             </div>
           </div>

@@ -11,38 +11,38 @@
   --color-gold-fill: var(--gold-fill); --color-gold-ink: var(--gold-ink);
   --color-good: var(--good); --color-bad: var(--bad); --color-overlay: var(--overlay);
 }
-/* Doracash: quiet graphite, warm neutrals and a focused lime accent. */
+/* Doracash: muted blue surfaces, soft accents and no luminous fills. */
 :root, [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #101411; --fg: #f1f4eb; --muted: #a5afa2;
-  --surface: #1a201b; --surface-2: #242c25; --line: #343e34;
-  --gold: #d3f78b; --gold-fill: #d3f78b; --gold-ink: #202c15;
-  --selected: #2e3a24; --selected-ink: #d3f78b; --hero-wash: #202a20;
-  --good: #a6e5a0; --bad: #ff9991;
-  --money-positive: #b7eeab; --money-negative: #ff9991;
-  --companion-red: #ff9991; --companion-yellow: #e8d298;
-  --overlay: #080e0bc2; --glass-panel: #202820;
-  --shadow: 0 8px 30px #060b081a; --glass-shadow: var(--shadow);
-  --glass-edge: var(--line); --glass-highlight: #d3f78b0d;
+  --bg: #141d28; --fg: #dce5ed; --muted: #a2b1c1;
+  --surface: #1c2938; --surface-2: #263547; --line: #35475b;
+  --gold: #9bb9d7; --gold-fill: #8daecf; --gold-ink: #172a3d;
+  --selected: #2b4159; --selected-ink: #c1d5e8; --hero-wash: #203247;
+  --good: #a4c9b5; --bad: #dda8ab;
+  --money-positive: #a4c9b5; --money-negative: #dda8ab;
+  --companion-red: #dda8ab; --companion-yellow: #c5bc9e;
+  --overlay: #0c1523bf; --glass-panel: #202f40;
+  --shadow: 0 8px 30px #0d17221a; --glass-shadow: var(--shadow);
+  --glass-edge: var(--line); --glass-highlight: #9bb9d70d;
   --glass-reflection: linear-gradient(transparent, transparent); --glass-blur: none;
   --ease-glass: cubic-bezier(.22, 1, .36, 1); --motion-enter: cubic-bezier(.16, 1, .3, 1);
   --ios-border: var(--line); --ios-inset: var(--surface-2);
-  --cat-0: #b5d8a6; --cat-1: #e2b6a3; --cat-2: #e8d298;
-  --cat-3: #a8ccc1; --cat-4: #d0bca0; --cat-5: #c2bdd8;
+  --cat-0: #9bb9d7; --cat-1: #c5a7aa; --cat-2: #c5bc9e;
+  --cat-3: #9ebfbd; --cat-4: #baae9f; --cat-5: #b1adc9;
 }
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #f6f7f2; --fg: #20291e; --muted: #626e5e;
-  --surface: #ffffff; --surface-2: #edf0e7; --line: #dce2d5;
-  --gold: #3d601e; --gold-fill: #d3f78b; --gold-ink: #202c15;
-  --selected: #e1edce; --selected-ink: #344f1e; --hero-wash: #edf3e4;
-  --good: #33672d; --bad: #b3473d;
-  --money-positive: #33672d; --money-negative: #b3473d;
-  --companion-red: #b3473d; --companion-yellow: #826626;
-  --overlay: #20291e66; --glass-panel: #ffffff;
-  --shadow: 0 8px 30px #20381807; --glass-highlight: #3d601e0b;
-  --cat-0: #66824f; --cat-1: #b97c60; --cat-2: #a78b43;
-  --cat-3: #588779; --cat-4: #927451; --cat-5: #81789c;
+  --bg: #edf2f7; --fg: #293d52; --muted: #596f83;
+  --surface: #f7f9fc; --surface-2: #e4ebf3; --line: #cdd9e5;
+  --gold: #466c91; --gold-fill: #bfd2e5; --gold-ink: #263f57;
+  --selected: #dae6f1; --selected-ink: #365b7e; --hero-wash: #e2ecf5;
+  --good: #416a58; --bad: #985b61;
+  --money-positive: #416a58; --money-negative: #985b61;
+  --companion-red: #985b61; --companion-yellow: #7b7053;
+  --overlay: #293d5266; --glass-panel: #f1f5fa;
+  --shadow: 0 8px 30px #20384807; --glass-highlight: #466c910b;
+  --cat-0: #6486a7; --cat-1: #a47b7d; --cat-2: #9c8e6c;
+  --cat-3: #6b9693; --cat-4: #958573; --cat-5: #8b83a4;
 }
 @layer base {
   html { -webkit-font-smoothing: antialiased; background: var(--bg); color: var(--fg); }
@@ -519,7 +519,7 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
 .mobile-navigation .nav-item > svg { stroke-width: 1.7; margin-block: 3px; transform: none; width: 19px; height: 19px; }
 .mobile-navigation .nav-item[aria-current="page"] > svg { stroke-width: 2; }
 .mobile-navigation .nav-item > span { font-size: 9px; letter-spacing: -.025em; font-weight: 650; }
-.nav-indicator { position: absolute; pointer-events: none; top: 10px; left: 12px; width: calc((100% - 16px) / 5 - 8px); height: 58px; border-radius: 16px; background: var(--selected); transform: translateX(calc(var(--nav-index) * (100% + 8px))); transition: transform 360ms var(--motion-enter); }
+.nav-indicator { position: absolute; pointer-events: none; top: 10px; left: 12px; width: calc((100% - 16px) / var(--nav-count, 6) - 8px); height: 58px; border-radius: 16px; background: var(--selected); transform: translateX(calc(var(--nav-index) * (100% + 8px))); transition: transform 360ms var(--motion-enter); }
 .empty-balance { padding: clamp(28px, 5vw, 56px); max-width: 780px; }
 .empty-balance-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px; background: var(--gold-fill); color: var(--gold-ink); margin-bottom: 32px; transform: rotate(-5deg); }
 .empty-balance h2 { font-size: clamp(30px, 5vw, 48px); font-weight: 650; line-height: 1.12; letter-spacing: -.06em; margin: 14px 0 18px; }
@@ -596,4 +596,71 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   .material-ripple { display: none; }
+}
+
+/* Card references are local records; activation belongs to the bank's wallet. */
+.cards-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.cards-toolbar h2 { font-size: 20px; font-weight: 650; letter-spacing: -.04em; margin-top: 6px; }
+.cards-toolbar .material-button { font-size: 12px; }
+.cards-privacy { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 11px; line-height: 1.8; margin: 16px 0; }
+.cards-privacy svg { flex-shrink: 0; margin-top: 3px; color: var(--gold); }
+.cards-filters { display: flex; gap: 4px; padding: 4px; width: fit-content; background: var(--surface-2); border-radius: 12px; margin: 20px 0; }
+.cards-filters button { min-height: 44px; font-size: 12px; padding: 8px 18px; border-radius: 9px; color: var(--muted); }
+.cards-filters button[aria-pressed="true"] { color: var(--fg); background: var(--surface); }
+.cards-empty { padding: 32px; margin: 20px 0; }
+.cards-empty-icon { display: grid; place-items: center; width: 52px; height: 52px; border: 1px solid var(--line); border-radius: 16px; background: var(--selected); color: var(--gold); flex-shrink: 0; }
+.cards-empty h2 { font-size: 26px; font-weight: 650; letter-spacing: -.045em; margin-top: 24px; }
+.cards-empty p { max-width: 420px; font-size: 13px; line-height: 1.9; color: var(--muted); margin: 12px 0 24px; }
+.payment-cards-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.payment-card { min-width: 0; border: 1px solid var(--line); border-radius: 24px; padding: 24px; background: var(--hero-wash); color: var(--fg); }
+.payment-card[data-kind="debit"] { background: var(--surface); }
+.payment-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; font-size: 11px; color: var(--muted); }
+.payment-card-top > span:first-child { overflow-wrap: anywhere; }
+.payment-card-network { font-size: 12px; color: var(--fg); font-weight: 700; text-align: right; }
+.payment-card-name { display: flex; align-items: flex-start; gap: 10px; margin-top: 28px; }
+.payment-card-name > svg { color: var(--gold); flex-shrink: 0; margin-top: 2px; }
+.payment-card h2 { min-width: 0; overflow-wrap: anywhere; font-size: 20px; font-weight: 650; letter-spacing: -.04em; line-height: 1.4; }
+.payment-card-number { font-size: 24px; font-weight: 600; letter-spacing: .12em; font-variant-numeric: tabular-nums; margin: 24px 0 16px; }
+.payment-card-number > span { color: var(--muted); margin-right: 12px; letter-spacing: .18em; }
+.payment-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); }
+.payment-card-dates { display: flex; gap: 28px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.payment-card-dates dt { font-size: 10px; color: var(--muted); }
+.payment-card-dates dd { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.payment-card-wallet { display: flex; align-items: flex-start; gap: 7px; font-size: 10px; color: var(--muted); line-height: 1.8; margin-top: 20px; }
+.payment-card-wallet svg { flex-shrink: 0; margin-top: 2px; }
+.payment-card-actions { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+.payment-card-actions .material-button { margin-right: auto; font-size: 11px; padding-inline: 12px; }
+.wallet-explainer { display: flex; align-items: flex-start; gap: 18px; padding: 24px; margin-top: 24px; }
+.wallet-explainer h2 { font-size: 19px; font-weight: 650; letter-spacing: -.03em; }
+.wallet-explainer p { font-size: 12px; color: var(--muted); line-height: 1.9; margin: 10px 0 18px; }
+.wallet-explainer .material-button { font-size: 11px; }
+.card-form { display: flex; flex-direction: column; gap: 16px; }
+.card-form > .cards-privacy { margin: 0; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.card-form label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--fg); }
+.card-form input:not([type="checkbox"]), .card-form select { width: 100%; min-width: 0; min-height: 46px; border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; font-size: 16px; background: var(--surface-2); color: var(--fg); outline: none; }
+.card-form input:focus, .card-form select:focus { border-color: var(--gold); }
+.card-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card-form .card-wallet-check { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; line-height: 1.7; }
+.card-wallet-check input { width: 18px; height: 18px; flex-shrink: 0; margin-top: 3px; accent-color: var(--gold); }
+.card-wallet-check small { display: block; color: var(--muted); font-size: 10px; margin-top: 4px; }
+.wallet-guide { font-size: 12px; line-height: 1.9; }
+.wallet-guide > p { color: var(--muted); }
+.wallet-guide strong { color: var(--fg); }
+.wallet-guide ol { list-style: decimal; padding-left: 20px; margin: 20px 0; }
+.wallet-guide li { padding-left: 4px; margin: 14px 0; color: var(--muted); }
+.wallet-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 12px 14px; color: var(--gold); border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; line-height: 1.7; text-decoration: none; }
+.wallet-link svg { flex-shrink: 0; }
+.wallet-link-primary { background: var(--gold-fill); color: var(--gold-ink); font-weight: 650; border: 0; }
+.wallet-link-note { font-size: 10px; color: var(--muted); line-height: 1.8; margin-top: 6px; }
+@media (max-width: 1023px) { .payment-cards-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 767px) {
+  .cards-toolbar { gap: 14px; }
+  .cards-toolbar h2 { font-size: 18px; }
+  .cards-toolbar .material-button { font-size: 11px; padding-inline: 14px; }
+  .cards-empty { padding: 24px; }
+  .payment-card { padding: 22px; }
+  .wallet-explainer { padding: 20px; flex-direction: column; gap: 14px; }
+  .cards-privacy { font-size: 10px; }
+  .mobile-navigation .nav-item > span { font-size: 8px; }
+  .mobile-navigation { margin-inline: 8px; }
 }
