@@ -1,6 +1,6 @@
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
 import { PageHeader } from "@/components/shell";
@@ -76,11 +76,18 @@ export function QuincenaPanel() {
 
   if (!period) {
     return (
-      <div>
-        <PageHeader title="Sin quincena abierta" lede="La anterior ya quedó archivada." />
-        <Button onClick={() => { openNext(); toast.success("Nueva quincena lista"); }}>
-          Abrir la siguiente
-        </Button>
+      <div className="dashboard-home">
+        <PageHeader title="Tu quincena, en orden." lede="Un espacio para tu dinero y tus próximos pasos." />
+        <section className="empty-balance hero-card">
+          <span className="empty-balance-icon" aria-hidden="true"><Wallet className="size-7" /></span>
+          <p className="page-eyebrow">UN NUEVO COMIENZO</p>
+          <h2>Haz espacio para<br />lo que te importa.</h2>
+          <p>Organiza tus gastos, separa tus ahorros y decide qué puedes disfrutar esta quincena.</p>
+          <Button onClick={() => { openNext(); toast.success("Nueva quincena lista"); }}>
+            Abrir la siguiente <ArrowUpRight className="size-4" />
+          </Button>
+          <div className="empty-balance-tags"><span><Wallet className="size-4" /> Tus gastos</span><span><PiggyBank className="size-4" /> Tus ahorros</span></div>
+        </section>
       </div>
     );
   }
@@ -115,31 +122,31 @@ export function QuincenaPanel() {
   const { cash, account } = pendingMoneyLocations(period);
   const rate = savingsRate(period);
   const tone = rateTone(rate);
-  const safeEnd = (period.end && !isNaN(new Date(period.end).getTime())) 
-    ? period.end 
+  const safeEnd = (period.end && !isNaN(new Date(period.end).getTime()))
+    ? period.end
     : new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
   const days = daysUntil(safeEnd);
 
   return (
-    <div>
+    <div className="dashboard-home">
       <PageHeader
-        title="Esta quincena"
+        title="Tu quincena, en orden."
         lede={`${formatRange(period.start, period.end)} · ${daysLabel(days)}`}
       />
 
       <section className="hero-card balance-overview">
         <div className="balance-main">
-          <p className="balance-eyebrow"><Wallet className="size-4" /> TU BOLSILLO DISPONIBLE</p>
+          <div className="balance-topline"><p className="balance-eyebrow"><Wallet className="size-4" /> Disponible para ti</p><span className="currency-badge">C$ · NIO</span></div>
           <p className={cn("balance-amount font-display tabular-nums", surplus < 0 ? "text-bad" : "text-fg")}><MoneyAmount value={surplus} /></p>
-          <p className="mt-3 text-sm text-muted">Cuida tu futuro. Disfruta el presente.</p>
+          <p className="balance-caption">Cuida tu futuro. Disfruta el presente.</p>
           <Button className="mt-6" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
             <PiggyBank className="size-4" /> Agregar a ahorros <ArrowUpRight className="size-4" />
           </Button>
         </div>
         <div className="balance-details">
-          <label className="text-xs font-medium text-muted">Ingreso neto de la quincena</label>
-          <div className="mt-2"><MoneyField label="Ingreso neto de la quincena" value={period.income} onChange={setIncome} /></div>
-          <div className="mt-5 flex items-start justify-between gap-4 text-sm">
+          <label className="balance-income-label"><ArrowDownLeft className="size-4" /> Ingreso de la quincena</label>
+          <div className="balance-income mt-2"><MoneyField label="Ingreso neto de la quincena" value={period.income} onChange={setIncome} /></div>
+          <div className="balance-stats mt-5 flex items-start justify-between gap-4 text-sm">
           <div>
             <p className="text-muted">Gastos</p>
             <p className="font-display text-xl tabular-nums"><MoneyAmount value={expenses} outflow /></p>
@@ -157,7 +164,7 @@ export function QuincenaPanel() {
         </div>
       </section>
 
-      <details className="card mt-4 px-4 py-3">
+      <details className="bank-summary card mt-4 px-4 py-3">
         <summary className="cursor-pointer text-sm font-medium">
           Saldo estimado <strong className="ml-2 tabular-nums"><MoneyAmount value={bankBalance} /></strong>
         </summary>
@@ -197,7 +204,7 @@ export function QuincenaPanel() {
         </section>
       )}
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+      <div className="section-heading mt-8 flex flex-wrap items-center justify-between gap-3">
         <div><p className="page-eyebrow mb-1">CADA CÓRDOBA, EN SU LUGAR</p><h2 className="font-display text-2xl">Tus rubros</h2></div>
         <Button variant="ghost" onClick={() => setAddCategoryOpen(true)} className="text-gold bg-surface-2 px-3">
           <Plus className="size-4" /> Nuevo Rubro
@@ -208,7 +215,7 @@ export function QuincenaPanel() {
         aria-label="Distribución del dinero de tus rubros pendientes"
         aria-live="polite"
         aria-atomic="true"
-        className="card mt-4 grid grid-cols-2 divide-x divide-line py-3"
+        className="distribution-strip card mt-4 grid grid-cols-2 divide-x divide-line py-3"
       >
         <div className="min-w-0 px-4">
           <dt className="text-sm text-muted">Efectivo a retirar</dt>
@@ -224,7 +231,7 @@ export function QuincenaPanel() {
         </div>
       </dl>
 
-      <div className="mt-4 flex flex-col gap-4">
+      <div className="rubros-list mt-4 grid gap-3">
         {period.categories.map((category) => {
           const total = categoryTotal(category);
           const open = openIds[category.id] ?? false;
@@ -235,7 +242,7 @@ export function QuincenaPanel() {
           const paidAmount = categoryPaidAmount(category);
           const paid = total > 0 && paidAmount >= total;
           const dueDate = category.carriedDueDate ?? categoryDueDate(period.start, category.dueDay);
-          
+
           return (
             <div key={category.id} className="category-card card overflow-hidden">
               <RadioGroup.Root
@@ -247,7 +254,7 @@ export function QuincenaPanel() {
                   setCategoryMoneyLocation(category.id, location);
                   playSelectionHaptic();
                 }}
-                className="mx-4 mt-3 grid max-w-xs grid-cols-2 gap-1 rounded-full border border-line bg-surface-2 p-1"
+                className="money-location-switch mx-4 grid max-w-xs grid-cols-2 gap-1 rounded-full border border-line bg-surface-2 p-1"
               >
                 <RadioGroup.Item value="account" className="money-location-option">
                   Cuenta
@@ -257,22 +264,22 @@ export function QuincenaPanel() {
                 </RadioGroup.Item>
               </RadioGroup.Root>
               <div className="category-heading flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="flex min-w-0 flex-1 basis-40 flex-col gap-1">
+                <div className="category-identity flex min-w-0 flex-1 basis-40 flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: `var(--cat-${category.tone})` }} />
                     <h3 className="min-w-0 flex-1 font-medium text-base break-words"><button className="category-disclosure" aria-expanded={open} aria-controls={`category-${category.id}`} onClick={() => setOpenIds(prev => ({ ...prev, [category.id]: !open }))}>{category.name}<ChevronDown className={cn("size-4 shrink-0 text-muted transition-transform", open && "rotate-180")} /></button></h3>
                   </div>
-                  
+
                   {/* Botón para cambiar entre Gasto / Ahorro directamente aquí */}
                   <div className="flex items-center gap-2 mt-1">
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "need"); }}
                       aria-pressed={!isSaving}
                       className={cn("min-h-11 text-xs px-3 py-2 rounded-xl border", !isSaving ? "bg-bad/10 border-bad/40 text-bad" : "border-line text-muted")}
                     >
                       Gasto
                     </button>
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "life"); }}
                       aria-pressed={isSaving}
                       className={cn("min-h-11 text-xs px-3 py-2 rounded-xl border", isSaving ? "bg-good/10 border-good/40 text-good" : "border-line text-muted")}
@@ -282,7 +289,7 @@ export function QuincenaPanel() {
                   </div>
                 </div>
 
-                <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
+                <div className="category-payment flex min-w-0 max-w-full flex-wrap items-center gap-3">
                   <label
                     className={cn(
                       "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-xs font-medium",
@@ -319,7 +326,7 @@ export function QuincenaPanel() {
                   </button>
                 </div>
               </div>
-              
+
               {(total > 0 || dueDate) && (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3 text-xs text-muted">
                   {paidAmount > 0 && !paid && (
@@ -352,7 +359,7 @@ export function QuincenaPanel() {
                       />
                     ))}
                   </ul>
-                  
+
                   {editingCategory === category.id && (
                     <div className="mt-3 rounded-xl border border-line bg-surface p-3 flex flex-col gap-3">
                       <p className="text-sm font-medium">Monto de {category.name}</p>
@@ -382,7 +389,7 @@ export function QuincenaPanel() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-line pt-3 text-sm">
                     <label className="flex min-h-11 items-center gap-2">
                       Vence cada mes
@@ -461,7 +468,7 @@ export function QuincenaPanel() {
 
       <Modal title="Nuevo rubro" open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
         <div className="p-5 flex flex-col gap-4">
-          <h2 className="text-xl font-bold">Nuevo Rubro</h2>
+
           <input
             type="text"
             placeholder="Ej. Cajita de ahorros LAFISE"
@@ -469,9 +476,9 @@ export function QuincenaPanel() {
             onChange={(e) => setNewCategoryName(e.target.value)}
             className="w-full rounded bg-surface-2 p-3 text-sm outline-none focus:ring-2 focus:ring-gold"
           />
-          <Button 
-            full 
-            disabled={!newCategoryName.trim()} 
+          <Button
+            full
+            disabled={!newCategoryName.trim()}
             onClick={() => {
               if (newCategoryName.trim()) {
                 addCategory(newCategoryName, "need");
@@ -490,13 +497,13 @@ export function QuincenaPanel() {
           <h2 className="text-xl font-bold">Agregar a Ahorros</h2>
           <p className="text-sm text-muted">¿Cuánto quieres apartar?</p>
           <MoneyField label="Monto a apartar" value={savingsAmount} onChange={setSavingsAmount} />
-          
+
           <p className="text-sm font-medium mt-2">¿A qué cuenta?</p>
           <div className="flex flex-col gap-2">
             {['BAC', 'LAFISE', 'BANPRO'].map((banco) => (
-              <Button 
+              <Button
                 key={banco}
-                variant="ghost" 
+                variant="ghost"
                 className="w-full justify-between bg-surface-2"
                 disabled={savingsAmount <= 0 || savingsAmount > surplus}
                 onClick={() => {

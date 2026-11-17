@@ -1,16 +1,15 @@
 import { createContext, useContext, useEffect, useState, type CSSProperties } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Bell, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
+import { WalletCards, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
 import { FinancialCompanions } from "./financial-companions";
 import { MaterialMotion } from "./material-motion";
-import { MascotAvatar } from "./mascot-avatar";
 import { Button, Modal, IconButton } from "@/components/ui";
 
 const NAV = [
-  { to: "/", label: "Quincena", icon: Bell, exact: true },
+  { to: "/", label: "Quincena", icon: WalletCards, exact: true },
   { to: "/ahorro", label: "Ahorros", icon: PiggyBank },
   { to: "/historial", label: "Historial", icon: History },
   { to: "/plan", label: "Plan", icon: LineChart },
@@ -39,7 +38,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#111318" : "#f8f9ff");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#101411" : "#f6f7f2");
   }, [theme]);
 
   return (
@@ -47,11 +46,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <MaterialMotion />
       <div className="app-frame">
       <a href="#main-content" className="skip-link">Ir al contenido</a>
-      <div className="app-workspace mx-auto flex w-full max-w-6xl">
+      <div className="app-workspace mx-auto flex w-full max-w-7xl">
         {/* Barra Lateral (Escritorio) */}
-        <aside className="desktop-sidebar hidden w-64 shrink-0 flex-col px-5 py-8 md:flex">
+        <aside className="desktop-sidebar hidden w-60 shrink-0 flex-col px-5 py-8 md:flex">
           <Brand />
-          <p className="sidebar-eyebrow mt-12 mb-4">TU ESPACIO</p>
+          <p className="sidebar-eyebrow mt-12 mb-4">TU DÍA A DÍA</p>
           <nav className="flex flex-col gap-2" aria-label="Secciones">
             {NAV.map((item) => {
               const active = item.exact ? path === item.to : path.startsWith(item.to);
@@ -76,12 +75,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="mt-auto pt-8">
-            <div className="sidebar-note mb-5"><span className="sidebar-eyebrow">UN PASO A LA VEZ</span><p>Tu futuro también se construye con pequeños gustitos.</p><span className="sidebar-note-line" /></div>
+            <div className="sidebar-note mb-5"><span className="sidebar-eyebrow">A TU RITMO</span><p>Un poco de orden hoy. Más libertad mañana.</p><span className="sidebar-note-line" /></div>
             <Button variant="ghost" className="w-full justify-start gap-3 text-muted hover:text-gold" onClick={() => setSettingsOpen(true)}>
               <Settings className="size-5" /> Ajustes
             </Button>
             <p className="mt-4 text-xs text-pretty text-muted/60">
-              Cada pago, un margen. Apartá antes de que se mezcle con el resto.
+              Hecho para tus quincenas. Y para lo que viene.
             </p>
           </div>
         </aside>
@@ -98,7 +97,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Barra de Navegación Flotante (Móvil) */}
       <nav
-        className="mobile-navigation glass-nav rounded-3xl md:hidden"
+        className="mobile-navigation md:hidden"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.35rem)" }}
         aria-label="Secciones móviles"
       >
@@ -161,8 +160,8 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
         </IconButton>
       </div>
       <div className="page-heading min-w-0">
-        <p className="page-eyebrow mb-2">DORACASH <span aria-hidden="true">/</span> TU MUNDO FINANCIERO</p>
-        <h1 className="font-display text-3xl md:text-4xl leading-tight text-fg drop-shadow-sm">{title}</h1>
+        <p className="page-eyebrow mb-2"><span className="wordmark-dot" aria-hidden="true" /> Doracash <span className="header-tagline">Tu dinero, a tu ritmo.</span></p>
+        <h1 className="font-display text-3xl md:text-4xl leading-tight text-fg">{title}</h1>
       </div>
       <FinancialCompanions />
       {lede ? <p className="page-lede text-sm text-pretty text-muted">{lede}</p> : null}
@@ -172,11 +171,11 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
 
 function Brand() {
   return (
-    <div className="flex items-center gap-3">
-      <span className="brand-mascot"><MascotAvatar character="doraemon" /></span>
+    <div className="brand-lockup">
+      <span className="brand-emblem" aria-hidden="true"><WalletCards className="size-6" /></span>
       <div>
-        <p className="font-display text-2xl leading-none text-fg">Doracash</p>
-        <p className="mt-1 text-[10px] uppercase tracking-widest text-gold/80 font-semibold">Un futuro con gustitos</p>
+        <p className="brand-name">doracash<span>.</span></p>
+        <p className="brand-caption">Tu dinero, a tu ritmo.</p>
       </div>
     </div>
   );

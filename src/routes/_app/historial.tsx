@@ -16,7 +16,7 @@ function HistorialPage() {
   const closedPeriods = sortedPeriods(periods.filter((p) => p && p.status === "closed"));
 
   return (
-    <div>
+    <div className="history-page">
       <PageHeader title="Historial" lede="Tus quincenas anteriores y en qué se fue tu dinero." />
 
       {closedPeriods.length === 0 ? (

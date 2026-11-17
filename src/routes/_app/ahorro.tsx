@@ -17,7 +17,7 @@ function AhorroPage() {
   const updateGoal = useFinance((s) => s.updateGoal);
   const recoverUnlinkedSavings = useFinance((s) => s.recoverUnlinkedSavings);
   const removeGoal = useFinance((s) => s.removeGoal);
-  
+
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveryAmount, setRecoveryAmount] = useState(0);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
@@ -25,12 +25,12 @@ function AhorroPage() {
   const [accountAmount, setAccountAmount] = useState(0);
 
   const period = periods.find((p) => p.status === "open");
-  
+
   const unlinked = period ? unlinkedSavings(period) : 0;
 
   // Sumamos el dinero de las cuentas de ahorro
   const inAccounts = goals.reduce((acc, g) => acc + g.saved, 0);
-  
+
   // Sumamos los rubros de la quincena marcados como "Ahorro"
   const savingsInPeriod = period
     ? roleAmount(period, "life")
@@ -39,7 +39,7 @@ function AhorroPage() {
   const totalAhorrado = inAccounts + savingsInPeriod;
 
   return (
-    <div>
+    <div className="savings-page">
       <PageHeader
         title="Ahorro"
         lede="Aquí guardas el dinero que no vas a gastar."
@@ -48,7 +48,7 @@ function AhorroPage() {
       <section className="hero-card p-5 mb-8">
         <p className="text-xs text-muted">Ahorro Total Acumulado</p>
         <p className="mt-1 font-display text-5xl leading-none tabular-nums text-good"><MoneyAmount value={totalAhorrado} /></p>
-        
+
         <div className="mt-4 flex flex-col gap-1 text-sm border-t border-line pt-3">
           <p className="flex justify-between">
             <span className="text-muted">En cuentas de ahorro:</span>
@@ -84,13 +84,13 @@ function AhorroPage() {
                   <Trash2 className="size-5" />
                 </button>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <label className="text-sm text-muted">Saldo actual:</label>
                 <div className="min-w-0 flex-1">
-                  <MoneyField 
+                  <MoneyField
                     label={`Saldo de ${account.name}`}
-                    value={account.saved} 
+                    value={account.saved}
                     commitOnBlur
                     onChange={(saved) => updateGoal(account.id, { saved })}
                   />
@@ -125,7 +125,7 @@ function AhorroPage() {
       {/* Modal para nueva cuenta */}
       <Modal title="Nueva cuenta de ahorro" open={newAccountOpen} onOpenChange={setNewAccountOpen}>
         <div className="p-5 flex flex-col gap-4">
-          <h2 className="text-xl font-bold">Nueva Cuenta de Ahorro</h2>
+
           <input
             type="text"
             placeholder="Ej. Cuenta BAC, Cajita LAFISE..."
@@ -137,9 +137,9 @@ function AhorroPage() {
             <label className="text-xs text-muted mb-1 block">Monto inicial (opcional)</label>
             <MoneyField label="Saldo inicial de la cuenta" value={accountAmount} onChange={setAccountAmount} />
           </div>
-          <Button 
-            full 
-            disabled={!accountName.trim()} 
+          <Button
+            full
+            disabled={!accountName.trim()}
             onClick={() => {
               // Usamos la estructura de metas, pero adaptada a cuentas
               addGoal({ name: accountName, target: 999999, saved: accountAmount, kind: "custom" });

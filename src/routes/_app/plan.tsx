@@ -47,7 +47,7 @@ function PlanPage() {
   const yearPlan = period.setAside * 24;
 
   return (
-    <div>
+    <div className="plan-page">
       <PageHeader
         title="Plan"
         lede="Una lectura simple de esta quincena, sin hoja de cálculo."
@@ -143,7 +143,7 @@ function Meter({
   const width = Math.max(0, Math.min(100, value));
   const over = !good && value > target + 3;
   return (
-    <div>
+    <div className="plan-page">
       <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
         <span>{label}</span>
         <span className="tabular-nums text-muted">
