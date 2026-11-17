@@ -621,3 +621,224 @@ button:not(.corner-pet), .nav-item {
   from { opacity: 0; clip-path: inset(0 0 22%); }
   to { opacity: 1; clip-path: inset(0); }
 }
+
+/* Liquid Glass surfaces for the finance views and app navigation. */
+.app-frame {
+  --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif;
+  --ios-widget: var(--surface);
+  --ios-inset: var(--surface-2);
+  --ios-nav: var(--glass-panel);
+  --ios-blue: var(--gold);
+  --ios-action: var(--gold-fill);
+  --ios-border: var(--glass-edge);
+  --ios-shadow: var(--glass-shadow);
+}
+
+:root:not([data-theme="light"]) .app-frame {
+  --ios-widget: rgba(22, 36, 50, .78);
+  --ios-inset: rgba(11, 20, 29, .55);
+  --ios-nav: rgba(13, 24, 36, .9);
+  --ios-blue: #69b5ff;
+  --ios-action: #0a64d4;
+  --ios-border: rgba(255, 255, 255, .12);
+  --ios-shadow: 0 8px 28px #0005, inset 0 1px 0 #ffffff15;
+  background:
+    radial-gradient(ellipse at 2% 10%, #0a84ff20, transparent 42%),
+    radial-gradient(ellipse at 100% 85%, #00f59b0d, transparent 40%),
+    linear-gradient(180deg, #0b141d, #0e1b27 52%, #12202c);
+}
+
+.page-content:not(:has(.chat-card)) > div > :not(.page-header),
+.page-content:not(:has(.chat-card)) :is(.page-heading, .page-lede, .header-controls) {
+  --font-sans: var(--ios-font);
+  font-family: var(--ios-font);
+}
+
+.page-content:not(:has(.chat-card)) .page-header {
+  grid-template-areas: "heading controls" "lede lede" "companions companions";
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.page-content:not(:has(.chat-card)) .page-heading h1 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 750;
+  letter-spacing: -.025em;
+}
+
+.page-content:not(:has(.chat-card)) .page-heading .page-eyebrow,
+.page-content:not(:has(.chat-card)) .header-controls .liquid-icon {
+  color: var(--ios-blue);
+}
+
+.page-content:not(:has(.chat-card)) .page-lede {
+  padding: 8px 12px;
+  border: 1px solid var(--ios-border);
+  border-radius: .8125rem;
+  background: var(--ios-inset);
+}
+
+.app-frame :is(.desktop-sidebar, .mobile-navigation) {
+  font-family: var(--ios-font);
+  background: var(--ios-nav);
+}
+
+.app-frame .nav-item[aria-current="page"] {
+  color: var(--ios-blue);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ios-blue) 10%, transparent);
+  box-shadow: none;
+}
+
+:root .app-frame .nav-item[aria-current="page"] > svg:first-child {
+  color: inherit;
+  background: none;
+  filter: none;
+}
+
+:root:not([data-theme="light"]) .page-content:not(:has(.chat-card)) :is(.card, .hero-card, .header-controls):not(.companions *) {
+  --muted: #a3b2c5;
+  background: var(--ios-widget);
+  border-color: var(--ios-border);
+  box-shadow: var(--ios-shadow);
+  backdrop-filter: blur(26px) saturate(175%);
+  -webkit-backdrop-filter: blur(26px) saturate(175%);
+}
+
+:root:not([data-theme="light"]) .page-content:not(:has(.chat-card)) .page-lede {
+  color: #a3b2c5;
+}
+
+:root:not([data-theme="light"]) .page-content:not(:has(.chat-card)) .liquid-button[data-variant="primary"]:not(.companions *) {
+  background: var(--ios-action);
+  border-color: var(--ios-border);
+  color: #fff;
+  box-shadow: 0 4px 14px #0a84ff38;
+}
+
+.page-content .balance-overview {
+  border-radius: 1.5rem;
+}
+
+.page-content .balance-main, .page-content .balance-details {
+  padding: 20px;
+}
+
+.balance-main .balance-eyebrow {
+  color: var(--fg);
+  font-size: .75rem;
+  letter-spacing: .035em;
+}
+
+.balance-main .balance-eyebrow svg {
+  color: var(--ios-blue);
+}
+
+.balance-main .balance-amount {
+  margin-top: 8px;
+  font-size: clamp(2rem, 8vw, 2.75rem);
+  font-weight: 750;
+  letter-spacing: -.03em;
+}
+
+.balance-main .liquid-button {
+  width: auto;
+}
+
+.balance-details > .flex {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.balance-details > .flex > div {
+  padding: 10px;
+  border: 1px solid var(--ios-border);
+  border-radius: .9375rem;
+  background: var(--ios-inset);
+  text-align: left;
+}
+
+:root:not([data-theme="light"]) .page-content .balance-overview {
+  --balance-accent: #00f59b;
+  border-color: color-mix(in srgb, var(--balance-accent) 35%, transparent);
+  box-shadow: var(--ios-shadow), 0 0 22px color-mix(in srgb, var(--balance-accent) 15%, transparent);
+}
+
+:root:not([data-theme="light"]) .page-content .balance-overview:has(.balance-amount .money-negative) {
+  --balance-accent: #ff4769;
+}
+
+:root:not([data-theme="light"]) .balance-overview::before {
+  background: linear-gradient(90deg, transparent, var(--balance-accent), transparent);
+  opacity: .5;
+}
+
+:root:not([data-theme="light"]) .page-content:not(:has(.chat-card)) :is(.money-positive, .money-negative):not(.companions *) {
+  color: var(--money-glow);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--money-glow) 35%, transparent);
+  background-image: none;
+}
+
+:root:not([data-theme="light"]) .page-content:not(:has(.chat-card)) .money-positive {
+  --money-glow: #00f59b;
+}
+
+:root:not([data-theme="light"]) .page-content:not(:has(.chat-card)) .money-negative {
+  --money-glow: #ff5d79;
+}
+
+:root:not([data-theme="light"]) .budget-progress > span {
+  background: linear-gradient(90deg, #0a84ff, #00f59b);
+}
+
+.category-heading input[type="checkbox"] {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+  background: var(--ios-inset);
+}
+
+.category-heading input[type="checkbox"]:checked {
+  border-color: var(--good);
+  background: var(--good);
+}
+
+.category-heading input[type="checkbox"]:checked::after {
+  content: "";
+  width: 5px;
+  height: 8px;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+
+.category-heading input[type="checkbox"]:disabled {
+  opacity: .5;
+}
+
+@media (max-width: 767px) {
+  .app-frame .mobile-navigation {
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    border-top: 1px solid var(--ios-border);
+    backdrop-filter: blur(26px) saturate(175%);
+    -webkit-backdrop-filter: blur(26px) saturate(175%);
+  }
+
+  .app-frame .mobile-navigation > div {
+    padding-block: 4px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-frame :is(.desktop-sidebar, .mobile-navigation),
+  :root:not([data-theme="light"]) .page-content:not(:has(.chat-card)) :is(.card, .hero-card, .header-controls):not(.companions *) {
+    background: var(--bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
