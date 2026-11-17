@@ -11,7 +11,6 @@ import { CornerMascot } from './roaming-mascot';
 import { useCardContext, saveCardContext } from '@/lib/use-card-context';
 import { cardContextFromHash, CARD_CONTEXT_LIMIT } from '@/lib/card-context';
 import { AdvisorMessage } from './advisor-message';
-import { DoraemonVoice } from './doraemon-voice';
 import { recentChatHistory, type ChatTurn } from '@/lib/chat-history';
 
 type Character = 'doraemon' | 'shinchan';
@@ -110,7 +109,6 @@ export function FinancialCompanions() {
         {(['doraemon', 'shinchan'] as const).map(c => <button key={c} aria-pressed={c === character} onClick={() => { setCharacter(c); }}><span>{c === 'doraemon' ? 'Doraemon' : 'Shin Chan'}<small>{c === 'doraemon' ? 'Tu bolsillo del futuro' : 'Gustitos con cabeza'}</small></span></button>)}
       </div>
       <div className="companion-scroll">
-        {character === 'doraemon' && <DoraemonVoice />}
         <p className="companion-eyebrow"><Sparkles size={13} /> CÁLCULO CON TUS DATOS</p>
         {!context.hayQuincena || context.ingreso <= 0 ? <p className="companion-copy">Abre tu quincena y registra tus ingresos y compromisos. Así podremos orientarte sin inventar montos.</p> : context.libre < 0 ? <p className="companion-copy">Tus asignaciones superan el ingreso por <strong><MoneyAmount value={-context.libre} outflow /></strong>. Revisa los gastos y pagos pendientes antes de añadir compras o ahorro.</p> : <>
           <p className="companion-copy">Después de los gastos, compromisos y ahorro registrados, quedan <strong><MoneyAmount value={context.libre} /></strong> por asignar.</p>
@@ -129,7 +127,7 @@ export function FinancialCompanions() {
         {cardStatus && <p className="companion-note" role="status">{cardStatus}</p>}
         {(tarjeta || context.deudaTarjetaManual) && <button className="companion-primary" disabled={busy} onClick={() => ask('Revisa los datos de mi tarjeta y explícame corte, vencimiento, retiro y tasas. Distingue el saldo reportado del pago de contado y dime qué falta confirmar antes de comprar.')}>Consultar mi tarjeta</button>}
         <button className="companion-primary" disabled={busy || !context.hayQuincena || context.ingreso <= 0} onClick={() => ask('Analiza mi quincena y dame tres recomendaciones concretas de ahorro, gastos y gustitos. Usa los cálculos y explica qué datos faltan.')}><Sparkles size={16} />{busy ? 'Consultando la IA…' : 'Pedir consejo a la IA'}</button>
-        {answer && <div className="companion-answer" role="status"><strong>{name}</strong><AdvisorMessage text={answer} doraemonVoice={character === 'doraemon'} /></div>}
+        {answer && <div className="companion-answer" role="status"><strong>{name}</strong><AdvisorMessage text={answer} /></div>}
         {error && <p role="alert" className="companion-error">{error}</p>}
       </div>
       <form className="companion-form" onSubmit={e => { e.preventDefault(); void ask(question); }}><input ref={inputRef} aria-label={`Pregunta a ${name}`} maxLength={1200} placeholder="¿Cómo organizo mi dinero?" value={question} onChange={e => setQuestion(e.target.value)} /><button className="companion-icon" aria-label="Enviar pregunta" disabled={busy || !question.trim()}><Send size={18} /></button></form>
