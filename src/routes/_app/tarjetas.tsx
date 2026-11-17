@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { CreditCard, Plus, Pencil, Trash2, Smartphone, ShieldCheck, ExternalLink, ContactRound } from "lucide-react";
+import { OnlineShopping } from "@/components/online-shopping";
+import { suggestIssuer, bankBrand } from "@/lib/online-payments";
+import bacLogo from "@/assets/banks/bac.png";
+import banproLogo from "@/assets/banks/banpro.png";
+import lafiseLogo from "@/assets/banks/lafise.png";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shell";
 import { Button, IconButton, Modal } from "@/components/ui";
@@ -8,6 +13,13 @@ import { useCards } from "@/lib/cards-store";
 import { CARD_LIMIT, WALLET_LINKS, type CardDraft, type CardKind, type CardNetwork, type SavedCard } from "@/lib/cards";
 
 export const Route = createFileRoute("/_app/tarjetas")({ component: CardsPage });
+
+const bankImages = { bac: bacLogo, banpro: banproLogo, lafise: lafiseLogo };
+
+function BankLabel({ bank }: { bank: string }) {
+  const brand = bankBrand(bank);
+  return <span className="inline-flex min-w-0 items-center gap-2">{brand && <img src={bankImages[brand]} width="28" height="28" alt="" className="size-7 shrink-0 rounded-md object-contain" />}<span>{bank}</span></span>;
+}
 
 function CardsPage() {
   const cards = useCards(s => s.cards);
@@ -41,7 +53,7 @@ function CardsPage() {
         <div><p className="page-eyebrow">TU CARTERA</p><h2>{cards.length} {cards.length === 1 ? "tarjeta registrada" : "tarjetas registradas"}</h2></div>
         <Button onClick={() => openForm(null)} disabled={cards.length >= CARD_LIMIT}><Plus className="size-4" /> Agregar tarjeta</Button>
       </div>
-      <p className="cards-privacy"><ShieldCheck className="size-4" /> Referencias guardadas en este dispositivo. Usa solo los últimos 4 dígitos; no ingreses número completo, CVV ni PIN.</p>
+      <p className="cards-privacy"><ShieldCheck className="size-4" /> Referencias guardadas en este dispositivo. De la numeración solo quedan guardados los últimos 4 dígitos.</p>
       {cards.length > 0 && <div className="cards-filters" role="group" aria-label="Filtrar tarjetas">
         {([['all', 'Todas'], ['credit', 'Crédito'], ['debit', 'Débito']] as const).map(([value, label]) => (
           <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>
@@ -58,7 +70,7 @@ function CardsPage() {
         <div className="payment-cards-grid">
           {shown.map(card => (
             <article className="payment-card" data-kind={card.kind} key={card.id} aria-label={`${card.alias}, terminada en ${card.last4}`}>
-              <div className="payment-card-top"><span>{card.bank}</span><span className="payment-card-network">{card.network}</span></div>
+              <div className="payment-card-top"><BankLabel bank={card.bank} /><span className="payment-card-network">{card.network}</span></div>
               <div className="payment-card-name"><CreditCard className="size-6" /><h2>{card.alias}</h2></div>
               <p className="payment-card-number" aria-label={`Terminada en ${card.last4}`}><span aria-hidden="true">••••</span> {card.last4}</p>
               <div className="payment-card-meta"><span>{card.kind === "credit" ? "Crédito" : "Débito"}</span><span>Registro local</span></div>
@@ -77,6 +89,7 @@ function CardsPage() {
         </div>
       )}
 
+      <OnlineShopping />
       <section className="wallet-explainer card">
         <span className="cards-empty-icon"><Smartphone className="size-6" /></span>
         <div><h2>Pagos sin contacto</h2><p>El pago NFC se hace en Google Wallet, con una tarjeta admitida por tu banco y un teléfono compatible. Guardarla en Doracash no la activa para pagar.</p>
@@ -111,6 +124,8 @@ function CardsPage() {
 }
 
 function CardForm({ initial, onSave }: { initial: SavedCard | null; onSave: (draft: CardDraft) => boolean }) {
+  const [prefix, setPrefix] = useState("");
+  const suggestion = suggestIssuer(prefix);
   const [alias, setAlias] = useState(initial?.alias ?? "");
   const [bank, setBank] = useState(initial?.bank ?? "");
   const [kind, setKind] = useState<CardKind>(initial?.kind ?? "credit");
@@ -131,6 +146,16 @@ function CardForm({ initial, onSave }: { initial: SavedCard | null; onSave: (dra
   return <form className="card-form" onSubmit={submit} autoComplete="off">
     <p className="cards-privacy"><ContactRound className="size-4" /> No ingreses número completo, CVV ni PIN.</p>
     <label>Nombre para identificarla<input autoComplete="off" value={alias} maxLength={40} required placeholder="Ej. Mi tarjeta del día a día" onChange={e => setAlias(e.target.value)} /></label>
+    <details className="rounded-xl border border-line p-3">
+      <summary className="cursor-pointer text-sm">Identificar banco por los primeros 6 dígitos</summary>
+      <label className="mt-3">Primeros 6 dígitos (opcional)<input inputMode="numeric" autoComplete="off" value={prefix} placeholder="000000" onChange={e => {
+        if (/^\d{0,6}$/.test(e.target.value)) setPrefix(e.target.value);
+      }} /></label>
+      <p className="wallet-link-note" aria-live="polite">{suggestion ? "Revisá la sugerencia antes de aplicarla." : prefix.length === 6 ? "Sin coincidencia. Podés escribir el banco abajo." : "La búsqueda se hace en tu teléfono y el prefijo se descarta."}</p>
+      {suggestion && <Button className="mt-2" variant="quiet" onClick={() => {
+        setBank(suggestion.bank); setNetwork(suggestion.network); setWalletReady(false); setPrefix("");
+      }}>Usar <BankLabel bank={suggestion.bank} /> · {suggestion.network}</Button>}
+    </details>
     <label>Banco o emisor<input autoComplete="off" value={bank} maxLength={60} required placeholder="Ej. BAC, Banpro, LAFISE…" onChange={e => { setBank(e.target.value); setWalletReady(false); }} /></label>
     <div className="card-form-row">
       <label>Tipo<select value={kind} onChange={e => { setKind(e.target.value as CardKind); setWalletReady(false); }}><option value="credit">Crédito</option><option value="debit">Débito</option></select></label>

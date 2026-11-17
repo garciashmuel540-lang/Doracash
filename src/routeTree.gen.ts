@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as PagarRouteImport } from './routes/pagar'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppAhorroRouteImport } from './routes/_app/ahorro'
 import { Route as AppHistorialRouteImport } from './routes/_app/historial'
@@ -22,6 +23,11 @@ import { Route as ApiParseExpenseRouteImport } from './routes/api/parse-expense'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagarRoute = PagarRouteImport.update({
+  id: '/pagar',
+  path: '/pagar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -72,6 +78,7 @@ const ApiParseExpenseRoute = ApiParseExpenseRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/pagar': typeof PagarRoute
   '/ahorro': typeof AppAhorroRoute
   '/historial': typeof AppHistorialRoute
   '/ia': typeof AppIaRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/api/parse-expense': typeof ApiParseExpenseRoute
 }
 export interface FileRoutesByTo {
+  '/pagar': typeof PagarRoute
   '/ahorro': typeof AppAhorroRoute
   '/historial': typeof AppHistorialRoute
   '/ia': typeof AppIaRoute
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/pagar': typeof PagarRoute
   '/_app/ahorro': typeof AppAhorroRoute
   '/_app/historial': typeof AppHistorialRoute
   '/_app/ia': typeof AppIaRoute
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/pagar'
     | '/ahorro'
     | '/historial'
     | '/ia'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/api/parse-expense'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/pagar'
     | '/ahorro'
     | '/historial'
     | '/ia'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/pagar'
     | '/_app/ahorro'
     | '/_app/historial'
     | '/_app/ia'
@@ -144,6 +156,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  PagarRoute: typeof PagarRoute
   ApiChatIaRoute: typeof ApiChatIaRoute
   ApiEmailHookRoute: typeof ApiEmailHookRoute
   ApiParseExpenseRoute: typeof ApiParseExpenseRoute
@@ -156,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pagar': {
+      id: '/pagar'
+      path: '/pagar'
+      fullPath: '/pagar'
+      preLoaderRoute: typeof PagarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -246,6 +266,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  PagarRoute: PagarRoute,
   ApiChatIaRoute: ApiChatIaRoute,
   ApiEmailHookRoute: ApiEmailHookRoute,
   ApiParseExpenseRoute: ApiParseExpenseRoute,

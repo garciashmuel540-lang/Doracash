@@ -24,3 +24,21 @@ test('restauración rechaza el conjunto si una tarjeta es inválida, repetida o 
   assert.equal(normalizeCardList([card, card]), null);
   assert.equal(normalizeCardList(Array.from({ length: CARD_LIMIT + 1 }, (_, i) => ({ ...card, id: `test-${i}` }))), null);
 });
+
+import { hostedCheckout, suggestIssuer, bankBrand } from "./online-payments.ts";
+
+test("issuer suggestions use a six-digit local prefix and are optional", () => {
+  assert.equal(suggestIssuer("455284")?.bank, "BAC Credomatic");
+  assert.equal(suggestIssuer("403132")?.network, "Visa");
+  for (const invalid of ["", "000000", "1234", "4552840000000000"]) assert.equal(suggestIssuer(invalid), null);
+  assert.equal(bankBrand("Banco de América Central"), "bac");
+  assert.equal(bankBrand("Otro banco"), null);
+});
+
+test("checkout only accepts a hosted payment link on the expected provider", () => {
+  assert.equal(hostedCheckout("https://app.tilopay.com/link/MjMwMjQ=")?.provider, "Tilopay");
+  assert.equal(hostedCheckout("https://www.paypal.com/ncp/payment/123456789ABCD")?.provider, "PayPal");
+  for (const link of ["", "https://www.paypal.com.example.org/ncp/payment/123456789ABCD", "https://app.tilopay.com/link/123?redirect=bad", "https://app.tilopay.com/link/../admin", "javascript:alert(1)"]) {
+    assert.equal(hostedCheckout(link), null);
+  }
+});
