@@ -5,6 +5,7 @@ import { useFinance } from "@/lib/store";
 import { advisorContext } from "@/lib/advisor";
 import { PageHeader } from "@/components/shell";
 import { AdvisorMessage } from "@/components/advisor-message";
+import { DoraemonVoice } from "@/components/doraemon-voice";
 import { Button } from "@/components/ui";
 import { openPeriod } from "@/lib/finance";
 import { useCardContext } from "@/lib/use-card-context";
@@ -148,6 +149,7 @@ function IAChatPage() {
               <p>
                 Soy {name}. Revisemos tus gastos, tus ahorros o ese gustito que tienes en mente.
               </p>
+              {personaje === "doraemon" && <DoraemonVoice />}
               <div className="chat-suggestions">
                 {prompts.map((prompt) => (
                   <button key={prompt} onClick={() => void enviar(prompt)}>
@@ -165,7 +167,7 @@ function IAChatPage() {
             >
               <span className="chat-message-label">{m.role === "user" ? "Tú" : name}</span>
               {m.role === "model" ? (
-                <AdvisorMessage text={m.text} />
+                <AdvisorMessage text={m.text} doraemonVoice={personaje === "doraemon"} />
               ) : (
                 <p className="whitespace-pre-wrap">{m.text}</p>
               )}
