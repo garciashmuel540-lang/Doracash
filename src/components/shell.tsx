@@ -1,10 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type CSSProperties } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Bell, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
 import { FinancialCompanions } from "./financial-companions";
+import { MaterialMotion } from "./material-motion";
 import { MascotAvatar } from "./mascot-avatar";
 import { Button, Modal, IconButton } from "@/components/ui";
 
@@ -38,10 +39,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#111318" : "#f8f9ff");
   }, [theme]);
 
   return (
     <ShellContext.Provider value={{ openSettings: () => setSettingsOpen(true), theme, setTheme }}>
+      <MaterialMotion />
       <div className="app-frame">
       <a href="#main-content" className="skip-link">Ir al contenido</a>
       <div className="app-workspace mx-auto flex w-full max-w-6xl">
@@ -99,7 +102,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.35rem)" }}
         aria-label="Secciones móviles"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5 items-center gap-1 px-2 py-2">
+        <div className="mobile-nav-track mx-auto grid max-w-lg grid-cols-5 items-center px-2 py-2" style={{ "--nav-index": Math.max(0, NAV.findIndex(item => item.exact ? path === item.to : path.startsWith(item.to))) } as CSSProperties}>
+          <span className="nav-indicator" aria-hidden="true" />
           {NAV.map((item) => {
             const active = item.exact ? path === item.to : path.startsWith(item.to);
             const Icon = item.icon;
@@ -130,8 +134,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         toastOptions={{
           style: {
             background: "var(--glass-panel)",
-            backdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
+            border: "1px solid var(--line)",
             color: "var(--fg)",
             borderRadius: "1rem",
           },

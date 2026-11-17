@@ -17,7 +17,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Control de finanzas quincenales en córdobas: gastos, margen y ahorro.",
       },
-      { name: "theme-color", content: "#0B141D" },
+      { name: "theme-color", content: "#111318" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -33,7 +33,7 @@ export const Route = createRootRoute({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
