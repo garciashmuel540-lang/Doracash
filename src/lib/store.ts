@@ -24,7 +24,7 @@ import {
   type Period,
   type Role,
 } from "./finance.ts";
-import { balanceFlow, repeatedCharges, rounded, todayInManagua, validDailyFields, validDate, type Balances, type Movement } from "./daily.ts";
+import { balanceFlow, hasComparison, repeatedCharges, rounded, todayInManagua, validDailyFields, validDate, type Balances, type Movement } from "./daily.ts";
 
 type Undo = () => boolean;
 
@@ -33,7 +33,8 @@ type Store = {
   recordExpense: (periodId: string, entry: ExpenseInput, allowDuplicate: boolean) => "duplicate" | "invalid" | Movement;
   undoMovement: (periodId: string, id: string) => boolean;
   recordTransfer: (periodId: string, from: MoneyLocation, amount: number) => Movement | null;
-  checkBalances: (periodId: string, counted: Balances) => boolean;
+  checkBalances: (periodId: string, counted: Balances, edit?: "first" | "last") => boolean;
+  removeLastCheck: (periodId: string) => boolean;
   setPayday: (periodId: string, date: string) => boolean;
   periods: Period[];
   goals: Goal[];
@@ -264,12 +265,37 @@ export const useFinance = create<Store>()(
         return movement;
       },
 
-      checkBalances: (periodId, counted) => {
+      checkBalances: (periodId, counted, edit) => {
         const state = get();
         const period = openPeriod(state);
-        if (period?.id !== periodId || (!Number.isFinite(counted.account) || !Number.isFinite(counted.cash) || counted.cash < 0)) return false;
-        const check = { date: todayInManagua(), counted: { ...counted }, flow: balanceFlow(period) };
-        set(mapOpen(state, p => ({ ...p, reconciliation: { first: p.reconciliation?.first ?? check, last: check } })));
+        if (period?.id !== periodId || !Number.isFinite(counted.account) || !Number.isFinite(counted.cash) || counted.cash < 0) return false;
+        const record = period.reconciliation;
+        if (edit) {
+          if (!record) return false;
+          const corrected = { ...record[edit], counted: { ...counted } };
+          const updated = hasComparison(record)
+            ? { ...record, earlierComparisons: record.earlierComparisons ?? [], [edit]: corrected }
+            : { first: corrected, last: corrected };
+          set(mapOpen(state, p => ({ ...p, reconciliation: updated })));
+        } else {
+          const check = { date: todayInManagua(), counted: { ...counted }, flow: balanceFlow(period) };
+          const updated = record ? { first: record.first, last: check, earlierComparisons: hasComparison(record)
+            ? [...(record.earlierComparisons ?? []), record.last] : [] } : { first: check, last: check };
+          set(mapOpen(state, p => ({ ...p, reconciliation: updated })));
+        }
+        return true;
+      },
+
+      removeLastCheck: (periodId) => {
+        const state = get();
+        const period = openPeriod(state);
+        const record = period?.reconciliation;
+        if (period?.id !== periodId || !record) return false;
+        const earlier = record.earlierComparisons ?? [];
+        const last = earlier.at(-1);
+        const reconciliation = last ? { first: record.first, last, earlierComparisons: earlier.slice(0, -1) }
+          : hasComparison(record) ? { first: record.first, last: record.first } : undefined;
+        set(mapOpen(state, p => ({ ...p, reconciliation })));
         return true;
       },
 

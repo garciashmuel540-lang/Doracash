@@ -18,7 +18,15 @@ export type Movement = {
 
 export type Balances = Record<MoneyLocation, number>;
 export type BalanceCheck = { date: string; counted: Balances; flow: Balances };
-export type Reconciliation = { first: BalanceCheck; last: BalanceCheck };
+export type Reconciliation = { first: BalanceCheck; last: BalanceCheck; earlierComparisons?: BalanceCheck[] };
+
+export function hasComparison(record: Reconciliation) {
+  if (record.earlierComparisons !== undefined) return true;
+  const { first, last } = record;
+  return first.date !== last.date || first.counted.cash !== last.counted.cash ||
+    first.counted.account !== last.counted.account || first.flow.cash !== last.flow.cash ||
+    first.flow.account !== last.flow.account;
+}
 export const rounded = (n: number) => Math.round(n * 1000) / 1000;
 
 export function todayInManagua() {
@@ -142,7 +150,9 @@ function balances(value: unknown, signed: boolean): boolean {
 
 export function validDailyFields(p: Period) {
   if (p.payday !== undefined && !validDate(p.payday)) return false;
-  if (p.reconciliation !== undefined && ![p.reconciliation?.first, p.reconciliation?.last].every(
+  const earlier = p.reconciliation?.earlierComparisons;
+  if (earlier !== undefined && !Array.isArray(earlier)) return false;
+  if (p.reconciliation !== undefined && ![p.reconciliation?.first, p.reconciliation?.last, ...(earlier ?? [])].every(
     c => c && validDate(c.date) && balances(c.counted, false) && balances(c.flow, true))) return false;
   if (p.movements === undefined) return true;
   return Array.isArray(p.movements) && p.movements.every(m => m && typeof m.id === "string" &&

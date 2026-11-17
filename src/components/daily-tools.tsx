@@ -1,9 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowLeftRight, CalendarDays, Plus, Scale, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Modal } from "./ui";
 import { categoryPendingAmount, formatMoney, type MoneyLocation, type Period } from "@/lib/finance";
-import { balanceFlow, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
+import { balanceFlow, duplicateIds, expectedBalances, forecast, hasComparison, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
 import { useFinance } from "@/lib/store";
 
 const place = { account: "Cuenta", cash: "Efectivo" };
@@ -77,34 +77,58 @@ function readAmount(raw: string, signed = false) {
 function Reconcile({ period }: { period: Period }) {
   const [cash, setCash] = useState("");
   const [account, setAccount] = useState("");
+  const [edit, setEdit] = useState<"first" | "last" | undefined>();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const cashField = useRef<HTMLInputElement>(null);
+  const removeLastCheck = useFinance(s => s.removeLastCheck);
   const [transfer, setTransfer] = useState("");
   const [from, setFrom] = useState<MoneyLocation>("account");
   const checkBalances = useFinance(s => s.checkBalances);
   const recordTransfer = useFinance(s => s.recordTransfer);
   const c = readAmount(cash), a = readAmount(account, true), t = readAmount(transfer);
   const record = period.reconciliation;
-  const expected = record && expectedBalances(record.first, balanceFlow(period));
+  const expected = record && edit !== "first" && expectedBalances(record.first, edit === "last" ? record.last.flow : balanceFlow(period));
+  function clearForm() {
+    setEdit(undefined); setCash(""); setAccount(""); setConfirmDelete(false);
+  }
+  function editCheck(which: "first" | "last") {
+    if (!record) return;
+    setConfirmDelete(false); setEdit(which);
+    setCash(String(record[which].counted.cash)); setAccount(String(record[which].counted.account));
+    cashField.current?.focus();
+  }
   const lastExpected = record && expectedBalances(record.first, record.last.flow);
   function difference(count: number, estimate: number) {
     const delta = rounded(count - estimate);
     return delta === 0 ? "Coincide" : (delta < 0 ? "Faltan " : "Sobran ") + formatMoney(Math.abs(delta));
   }
   return <div className="daily-form">
-    <p>{record ? "Compará lo que tenés con los movimientos registrados desde tu primer conteo." : "Anotá cuánto tenés ahora en cada lugar. Este primer conteo será la base de la quincena."}</p>
-    <form className="daily-form" onSubmit={e => { e.preventDefault(); if (c !== null && a !== null && checkBalances(period.id, { cash: c, account: a })) {
-      setCash(""); setAccount(""); toast.success(record ? "Comparación guardada" : "Primer conteo guardado");
+    <p>{edit ? `Corregí las cantidades del ${edit === "first" ? "primer" : "último"} conteo del ${shortDate(record![edit].date)}.` : record ? "Compará lo que tenés con los movimientos registrados desde tu primer conteo." : "Anotá cuánto tenés ahora en cada lugar. Este primer conteo será la base de la quincena."}</p>
+    <form className="daily-form" onSubmit={e => { e.preventDefault(); if (c !== null && a !== null && checkBalances(period.id, { cash: c, account: a }, edit)) {
+      clearForm(); toast.success(edit ? "Conteo corregido" : record ? "Comparación guardada" : "Primer conteo guardado");
     } }}>
       {(["cash", "account"] as const).map(k => {
         const value = k === "cash" ? c : a;
         return <label key={k}>{k === "cash" ? "Efectivo contado" : "Saldo que muestra tu banco"}
-          <input inputMode="decimal" placeholder="C$ 0.00" required value={k === "cash" ? cash : account} onChange={e => (k === "cash" ? setCash : setAccount)(e.target.value)} />
+          <input ref={k === "cash" ? cashField : undefined} inputMode="decimal" placeholder="C$ 0.00" required value={k === "cash" ? cash : account} onChange={e => (k === "cash" ? setCash : setAccount)(e.target.value)} />
           {expected && <small>Esperado {formatMoney(expected[k])}{value !== null && " · " + difference(value, expected[k])}</small>}
         </label>;
       })}
-      <Button type="submit" disabled={a === null || c === null}>{record ? "Guardar comparación" : "Guardar primer conteo"}</Button>
+      <Button type="submit" disabled={a === null || c === null}>{edit ? "Guardar corrección" : record ? "Guardar comparación" : "Guardar primer conteo"}</Button>
+      {edit && <Button variant="ghost" onClick={clearForm}>Cancelar edición</Button>}
     </form>
     {record && lastExpected && <div className="daily-note"><strong>Último conteo · {shortDate(record.last.date)}</strong>
-      {(["cash","account"] as const).map(k => <p key={k}>{place[k]} · {formatMoney(record.last.counted[k])} · {difference(record.last.counted[k], lastExpected[k])}</p>)}</div>}
+      {(["cash","account"] as const).map(k => <p key={k}>{place[k]} · {formatMoney(record.last.counted[k])} · {difference(record.last.counted[k], lastExpected[k])}</p>)}
+      {!edit && <div className="mt-2 flex flex-wrap gap-1">
+        <Button variant="quiet" onClick={() => editCheck("last")}>Corregir conteo</Button>
+        {hasComparison(record) && <Button variant="ghost" onClick={() => editCheck("first")}>Corregir primer conteo</Button>}
+        <Button variant="ghost" onClick={() => setConfirmDelete(true)}>Borrar conteo</Button>
+      </div>}
+      {confirmDelete && <div className="mt-3"><p>{hasComparison(record) ? "¿Borrar el último conteo y volver al anterior disponible?" : "¿Borrar tu primer conteo y volver a ingresar los saldos iniciales?"}</p>
+        <div className="flex flex-wrap gap-2"><Button variant="quiet" onClick={() => {
+          if (removeLastCheck(period.id)) { clearForm(); toast.success("Conteo borrado"); }
+        }}>Sí, borrar conteo</Button><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancelar</Button></div></div>}
+    </div>}
     <details><summary><ArrowLeftRight className="inline size-4" /> Registrar traslado</summary>
       <form className="daily-form mt-3" onSubmit={e => { e.preventDefault(); if (!t) return; const m = recordTransfer(period.id, from, t); if (m) { saved(period.id, m); setTransfer(""); } }}>
         <label>Dirección<select value={from} onChange={e => setFrom(e.target.value as MoneyLocation)}><option value="account">Cuenta → Efectivo</option><option value="cash">Efectivo → Cuenta</option></select></label>

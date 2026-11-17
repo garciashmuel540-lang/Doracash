@@ -108,3 +108,24 @@ test("changing a rubro's source keeps previous payments in their original locati
   assert.ok(undo?.());
   assert.deepEqual(balanceFlow(current()), { account: 950, cash: -70 });
 });
+
+test("saved counts can be corrected and deleted after exiting, preserving the original flow and expenses", async () => {
+  start();
+  get().checkBalances("test", { cash: 300, account: 500 });
+  get().recordExpense("test", input, false);
+  get().checkBalances("test", { cash: 200, account: 500 });
+  get().checkBalances("test", { cash: 201, account: 500 });
+  await useFinance.persist.rehydrate();
+  get().checkBalances("test", { cash: 310, account: 500 }, "first");
+  assert.equal(expectedBalances(current().reconciliation!.first, balanceFlow(current())).cash, 230);
+  get().checkBalances("test", { cash: 230, account: 500 }, "last");
+  assert.equal(current().reconciliation!.last.counted.cash, 230);
+  assert.ok(get().removeLastCheck("test"));
+  assert.equal(current().reconciliation!.last.counted.cash, 200);
+  assert.ok(get().removeLastCheck("test"));
+  assert.equal(current().reconciliation!.last.counted.cash, 310);
+  assert.ok(get().removeLastCheck("test"));
+  assert.equal(current().reconciliation, undefined);
+  assert.equal(current().movements?.length, 1);
+  assert.equal(estimatedBankBalance(current()), 920);
+});
