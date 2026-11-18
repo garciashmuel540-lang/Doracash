@@ -4,6 +4,7 @@ import { WalletCards, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkl
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
+import { CloudSettings, useCloudFinance } from "./cloud-settings";
 import { FinancialCompanions } from "./financial-companions";
 import { MaterialMotion } from "./material-motion";
 import { Button, Modal, IconButton } from "@/components/ui";
@@ -183,6 +184,7 @@ function Brand() {
 
 // El diálogo de configuración se mantiene igual por ahora para no romper la lógica
 function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const sync = useCloudFinance();
   const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState("");
   const reset = useFinance((state) => state.reset);
@@ -228,8 +230,9 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   }
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Ajustes" description="Todo queda guardado en este dispositivo.">
+    <Modal open={open} onOpenChange={onOpenChange} title="Ajustes" description="Administrá tus copias y los datos de este dispositivo.">
       <div className="flex flex-col gap-3">
+        <CloudSettings {...sync} />
         <Button variant="quiet" full onClick={download}>Descargar respaldo</Button>
         <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-surface-2 px-5 text-sm font-medium">
           Restaurar respaldo
