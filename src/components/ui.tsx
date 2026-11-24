@@ -2,6 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { playFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/cn";
 import { formatMoney, formatPlain, parseMoney } from "@/lib/finance";
 
@@ -144,7 +145,10 @@ export function Modal({
   children: ReactNode;
 }) {
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={(nextOpen) => {
+      playFeedback(nextOpen ? "open" : "close");
+      onOpenChange(nextOpen);
+    }}>
       <Dialog.Portal>
         <Dialog.Overlay className="material-overlay fixed inset-0 z-40 bg-overlay" />
         <Dialog.Content className="sheet fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-3xl bg-surface px-5 pt-5 pb-8 shadow-none outline-none md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[28rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">

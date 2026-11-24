@@ -1,10 +1,10 @@
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useEffect, useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
-import { toast } from "sonner";
+import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
 import { PageHeader } from "@/components/shell";
-import { playSelectionHaptic } from "@/lib/haptics";
+import { playFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/cn";
 import { repeatedCharges, todayInManagua } from "@/lib/daily";
 import { DailyTools } from "./daily-tools";
@@ -114,7 +114,7 @@ export function QuincenaPanel() {
       action: {
         label: "Deshacer",
         onClick: () => {
-          if (undo()) toast.success("Cambio deshecho");
+          if (undo()) toast.undo("Cambio deshecho");
           else toast.info("El registro cambió. Puedes ajustarlo desde su rubro o cuenta.");
         },
       },
@@ -144,7 +144,7 @@ export function QuincenaPanel() {
           <div className="balance-topline"><p className="balance-eyebrow"><Wallet className="size-4" /> Disponible para ti</p><span className="currency-badge">C$ · NIO</span></div>
           <p className={cn("balance-amount font-display tabular-nums", surplus < 0 ? "text-bad" : "text-fg")}><MoneyAmount value={surplus} /></p>
           <p className="balance-caption">Cuida tu futuro. Disfruta el presente.</p>
-          <Button className="mt-6" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
+          <Button aria-haspopup="dialog" className="mt-6" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
             <PiggyBank className="size-4" /> Agregar a ahorros <ArrowUpRight className="size-4" />
           </Button>
         </div>
@@ -213,7 +213,7 @@ export function QuincenaPanel() {
 
       <div className="section-heading mt-8 flex flex-wrap items-center justify-between gap-3">
         <div><p className="page-eyebrow mb-1">CADA CÓRDOBA, EN SU LUGAR</p><h2 className="font-display text-2xl">Tus rubros</h2></div>
-        <Button variant="ghost" onClick={() => setAddCategoryOpen(true)} className="text-gold bg-surface-2 px-3">
+        <Button aria-haspopup="dialog" variant="ghost" onClick={() => setAddCategoryOpen(true)} className="text-gold bg-surface-2 px-3">
           <Plus className="size-4" /> Nuevo Rubro
         </Button>
       </div>
@@ -259,8 +259,9 @@ export function QuincenaPanel() {
                 onValueChange={(value) => {
                   const location = value === "cash" ? "cash" : "account";
                   setCategoryMoneyLocation(category.id, location);
-                  playSelectionHaptic();
+                  playFeedback("select");
                 }}
+                data-feedback="off"
                 className="money-location-switch mx-4 grid max-w-xs grid-cols-2 gap-1 rounded-full border border-line bg-surface-2 p-1"
               >
                 <RadioGroup.Item value="account" className="money-location-option">
@@ -313,7 +314,6 @@ export function QuincenaPanel() {
                         const checked = event.currentTarget.checked;
                         announceChange(checked ? "Pago registrado" : "Pago retirado",
                           setCategoryPayment(category.id, checked ? "full" : 0));
-                        playSelectionHaptic();
                       }}
                     />
                     {paid ? "Pagado" : paidAmount > 0 ? "Pago parcial" : "Pendiente"}
@@ -341,7 +341,7 @@ export function QuincenaPanel() {
                   )}
                   {dueDate && <time dateTime={dueDate}>Vence {dueDate.slice(8)}/{dueDate.slice(5, 7)}</time>}
                   {!paid && total > 0 && (
-                    <Button type="button" variant="ghost" className="px-4 text-xs leading-snug text-gold [overflow-wrap:anywhere]" onClick={() => {
+                    <Button type="button" variant="ghost" aria-haspopup="dialog" className="px-4 text-xs leading-snug text-gold [overflow-wrap:anywhere]" onClick={() => {
                       setDuplicateConfirmed(false);
                       setPaymentAmount(0);
                       setPaymentId(category.id);
@@ -433,7 +433,7 @@ export function QuincenaPanel() {
           Pagos completos. La siguiente quincena se abrirá en unos segundos.
         </p>
       )}
-      <Button variant="ghost" className="mt-5" onClick={() => setRolloverOpen(true)}>
+      <Button aria-haspopup="dialog" variant="ghost" className="mt-5" onClick={() => setRolloverOpen(true)}>
         Pasar a la siguiente quincena
       </Button>
       <Modal title="Abrir otra quincena" open={rolloverOpen} onOpenChange={setRolloverOpen}>
@@ -492,6 +492,7 @@ export function QuincenaPanel() {
             onClick={() => {
               if (newCategoryName.trim()) {
                 addCategory(newCategoryName, "need");
+                playFeedback("confirm");
                 setNewCategoryName("");
                 setAddCategoryOpen(false);
               }

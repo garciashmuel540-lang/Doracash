@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowUpRight, MessageCircle, Send, Sparkles } from "lucide-react";
+import { playFeedback } from "@/lib/feedback";
 import { useFinance } from "@/lib/store";
 import { advisorContext } from "@/lib/advisor";
 import { PageHeader } from "@/components/shell";
@@ -51,6 +52,7 @@ function IAChatPage() {
   async function enviar(text = input) {
     const message = text.trim();
     if (!message || cargando || requestRef.current) return;
+    playFeedback("select");
     const abort = new AbortController();
     requestRef.current = abort;
     const nuevoMensaje: Message = { role: "user", text: message };
@@ -87,6 +89,7 @@ function IAChatPage() {
           ...current,
           [personaje]: current[personaje].slice(0, -1),
         }));
+        playFeedback("warning");
         setError(e instanceof Error ? e.message : "No se pudo conectar con la IA.");
         setInput(message);
       }

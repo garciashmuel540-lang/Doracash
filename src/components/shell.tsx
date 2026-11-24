@@ -1,12 +1,14 @@
 import { createContext, useContext, useEffect, useState, type CSSProperties } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { WalletCards, PiggyBank, History, LineChart, Settings, Sun, Moon, Sparkles, ArrowUpRight } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import { Toaster } from "sonner";
+import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { cn } from "@/lib/cn";
 import { useFinance, sanitizeData, importFinance } from "@/lib/store";
 import { CloudSettings, useCloudFinance } from "./cloud-settings";
 import { FinancialCompanions } from "./financial-companions";
-import { MaterialMotion } from "./material-motion";
+import { InteractionFeedback } from "./interaction-feedback";
+import { FeedbackSettings } from "./feedback-settings";
 import { Button, Modal, IconButton } from "@/components/ui";
 
 const NAV = [
@@ -39,20 +41,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#141d28" : "#edf2f7");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#1e2035" : "#edeaf7");
   }, [theme]);
 
   return (
     <ShellContext.Provider value={{ openSettings: () => setSettingsOpen(true), theme, setTheme }}>
-      <MaterialMotion />
+      <InteractionFeedback />
       <div className="app-frame">
       <a href="#main-content" className="skip-link">Ir al contenido</a>
       <div className="app-workspace mx-auto flex w-full max-w-7xl">
         {/* Barra Lateral (Escritorio) */}
         <aside className="desktop-sidebar hidden w-60 shrink-0 flex-col px-5 py-8 md:flex">
           <Brand />
-          <p className="sidebar-eyebrow mt-12 mb-4">TU DÍA A DÍA</p>
-          <nav className="flex flex-col gap-2" aria-label="Secciones">
+          <nav className="mt-12 flex flex-col gap-2" aria-label="Secciones">
             {NAV.map((item) => {
               const active = item.exact ? path === item.to : path.startsWith(item.to);
               const Icon = item.icon;
@@ -76,13 +77,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="mt-auto pt-8">
-            <div className="sidebar-note mb-5"><span className="sidebar-eyebrow">A TU RITMO</span><p>Un poco de orden hoy. Más libertad mañana.</p><span className="sidebar-note-line" /></div>
-            <Button variant="ghost" className="w-full justify-start gap-3 text-muted hover:text-gold" onClick={() => setSettingsOpen(true)}>
+            <Button aria-haspopup="dialog" variant="ghost" className="w-full justify-start gap-3 text-muted hover:text-gold" onClick={() => setSettingsOpen(true)}>
               <Settings className="size-5" /> Ajustes
             </Button>
-            <p className="mt-4 text-xs text-pretty text-muted/60">
-              Hecho para tus quincenas. Y para lo que viene.
-            </p>
           </div>
         </aside>
 
@@ -133,10 +130,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
         theme={theme}
         toastOptions={{
           style: {
-            background: "var(--glass-panel)",
+            background: "var(--surface)",
             border: "1px solid var(--line)",
             color: "var(--fg)",
-            borderRadius: "1rem",
+            borderRadius: "1.25rem",
+            boxShadow: "var(--clay-lift)",
           },
         }}
       />
@@ -156,12 +154,12 @@ export function PageHeader({ title, lede }: { title: string; lede?: string }) {
         >
           {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </IconButton>
-        <IconButton label="Ajustes" onClick={openSettings} className="size-11 rounded-full hover:bg-white/10">
+        <IconButton aria-haspopup="dialog" label="Ajustes" onClick={openSettings} className="size-11 rounded-full hover:bg-white/10">
           <Settings className="size-4" />
         </IconButton>
       </div>
       <div className="page-heading min-w-0">
-        <p className="page-eyebrow mb-2"><span className="wordmark-dot" aria-hidden="true" /> Doracash <span className="header-tagline">Tu dinero, a tu ritmo.</span></p>
+        <p className="page-eyebrow mb-2"><span className="wordmark-dot" aria-hidden="true" /> Doracash </p>
         <h1 className="font-display text-3xl md:text-4xl leading-tight text-fg">{title}</h1>
       </div>
       <FinancialCompanions />
@@ -182,7 +180,6 @@ function Brand() {
   );
 }
 
-// El diálogo de configuración se mantiene igual por ahora para no romper la lógica
 function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const sync = useCloudFinance();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -230,8 +227,9 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   }
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Ajustes" description="Administrá tus copias y los datos de este dispositivo.">
+    <Modal open={open} onOpenChange={onOpenChange} title="Ajustes" description="Personalizá los efectos y administrá los datos de este dispositivo.">
       <div className="flex flex-col gap-3">
+        <FeedbackSettings />
         <CloudSettings {...sync} />
         <Button variant="quiet" full onClick={download}>Descargar respaldo</Button>
         <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-surface-2 px-5 text-sm font-medium">

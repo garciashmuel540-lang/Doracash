@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowLeftRight, CalendarDays, Plus, Scale, Undo2 } from "lucide-react";
-import { toast } from "sonner";
+import { playFeedback } from "@/lib/feedback";
+import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { Button, Modal } from "./ui";
 import { categoryPendingAmount, formatMoney, type MoneyLocation, type Period } from "@/lib/finance";
 import { balanceFlow, duplicateIds, expectedBalances, forecast, hasComparison, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
@@ -11,7 +12,7 @@ const shortDate = (date: string) => date.slice(8, 10) + "/" + date.slice(5, 7);
 type Tool = "expense" | "check" | "calendar" | null;
 
 function undo(periodId: string, id: string) {
-  if (useFinance.getState().undoMovement(periodId, id)) toast.success("Movimiento deshecho");
+  if (useFinance.getState().undoMovement(periodId, id)) toast.undo("Movimiento deshecho");
   else toast.info("El rubro cambió o la quincena cerró. Revisá su movimiento más reciente.");
 }
 
@@ -45,11 +46,11 @@ function QuickExpense({ period, close }: { period: Period; close: () => void }) 
   const recent = [...new Set((period.movements ?? []).filter(m => m.kind === "expense").slice(-8).reverse().map(m => m.amount + " " + m.name))].slice(0, 3);
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (!parsed) { setError("Escribí el monto y un concepto de hasta 40 caracteres."); return; }
-    if (matches.length && confirm !== fingerprint) { setConfirm(fingerprint); return; }
+    if (!parsed) { setError("Escribí el monto y un concepto de hasta 40 caracteres."); playFeedback("warning"); return; }
+    if (matches.length && confirm !== fingerprint) { setConfirm(fingerprint); playFeedback("warning"); return; }
     const result = record(period.id, { ...parsed, date, location: origin, categoryId }, confirm === fingerprint);
-    if (result === "duplicate") { setConfirm(fingerprint); return; }
-    if (result === "invalid") { setError("Revisá la fecha y que el gasto no supere el pendiente del rubro."); return; }
+    if (result === "duplicate") { setConfirm(fingerprint); playFeedback("warning"); return; }
+    if (result === "invalid") { setError("Revisá la fecha y que el gasto no supere el pendiente del rubro."); playFeedback("warning"); return; }
     saved(period.id, result); close();
   }
   return <form className="daily-form" onSubmit={submit}>
@@ -126,7 +127,7 @@ function Reconcile({ period }: { period: Period }) {
       </div>}
       {confirmDelete && <div className="mt-3"><p>{hasComparison(record) ? "¿Borrar el último conteo y volver al anterior disponible?" : "¿Borrar tu primer conteo y volver a ingresar los saldos iniciales?"}</p>
         <div className="flex flex-wrap gap-2"><Button variant="quiet" onClick={() => {
-          if (removeLastCheck(period.id)) { clearForm(); toast.success("Conteo borrado"); }
+          if (removeLastCheck(period.id)) { clearForm(); toast.undo("Conteo borrado"); }
         }}>Sí, borrar conteo</Button><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancelar</Button></div></div>}
     </div>}
     <details><summary><ArrowLeftRight className="inline size-4" /> Registrar traslado</summary>
@@ -167,9 +168,9 @@ export function DailyTools({ period }: { period: Period }) {
   const filtered = onlyMatches && matches.size ? recent.filter(m => matches.has(m.id)) : recent;
   return <section className="daily-tools card" aria-label="Operaciones de la quincena">
     <div className="daily-actions">
-      <Button disabled={future} title={future ? "Disponible al comenzar esta quincena" : undefined} onClick={() => setTool("expense")}><Plus className="size-4" /> Gasto rápido</Button>
-      <Button variant="quiet" onClick={() => setTool("check")}><Scale className="size-4" /> Conciliar</Button>
-      <Button variant="quiet" onClick={() => setTool("calendar")}><CalendarDays className="size-4" /> Calendario</Button>
+      <Button disabled={future} title={future ? "Disponible al comenzar esta quincena" : undefined} aria-haspopup="dialog" onClick={() => setTool("expense")}><Plus className="size-4" /> Gasto rápido</Button>
+      <Button variant="quiet" aria-haspopup="dialog" onClick={() => setTool("check")}><Scale className="size-4" /> Conciliar</Button>
+      <Button variant="quiet" aria-haspopup="dialog" onClick={() => setTool("calendar")}><CalendarDays className="size-4" /> Calendario</Button>
     </div>
     {recent.length > 0 && <details className="mt-3"><summary>Movimientos de la quincena ({recent.length})</summary>
       {matches.size > 0 && <Button variant="quiet" className="mb-2" aria-pressed={onlyMatches} onClick={() => setOnlyMatches(!onlyMatches)}>{onlyMatches ? "Mostrar todos los movimientos" : "Revisar posibles repetidos (" + matches.size + ")"}</Button>}

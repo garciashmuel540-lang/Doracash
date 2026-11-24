@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Trash2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
+import { playFeedback } from "@/lib/feedback";
 import { useFinance } from "@/lib/store";
 import { roleAmount, unlinkedSavings } from "@/lib/finance";
 
@@ -65,7 +66,7 @@ function AhorroPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="font-display text-2xl">Tus Cuentas de Ahorro</h2>
-        <Button variant="ghost" onClick={() => setNewAccountOpen(true)} className="text-gold bg-surface-2 px-3">
+        <Button aria-haspopup="dialog" variant="ghost" onClick={() => setNewAccountOpen(true)} className="text-gold bg-surface-2 px-3">
           <Plus className="size-4" /> Nueva
         </Button>
       </div>
@@ -80,7 +81,7 @@ function AhorroPage() {
             <div key={account.id} className="card p-5">
               <div className="flex justify-between items-start gap-3 mb-3">
                 <h3 className="min-w-0 break-words font-medium text-lg">{account.name}</h3>
-                <button aria-label={`Eliminar cuenta ${account.name}`} onClick={() => removeGoal(account.id)} className="shrink-0 text-bad min-h-11 min-w-11 grid place-items-center">
+                <button aria-label={`Eliminar cuenta ${account.name}`} onClick={() => { removeGoal(account.id); playFeedback("undo"); }} className="shrink-0 text-bad min-h-11 min-w-11 grid place-items-center">
                   <Trash2 className="size-5" />
                 </button>
               </div>
@@ -104,7 +105,7 @@ function AhorroPage() {
       {unlinked > 0 && (
         <div className="card mt-4 p-4">
           <p className="mb-2 text-sm text-muted">Apartado sin cuenta vinculada: <MoneyAmount value={unlinked} /></p>
-          <Button variant="ghost" onClick={() => {
+          <Button aria-haspopup="dialog" variant="ghost" onClick={() => {
             setRecoveryAmount(0);
             setRecoveryOpen(true);
           }}>Recuperar al disponible</Button>
@@ -117,7 +118,10 @@ function AhorroPage() {
           </p>
           <MoneyField label="Monto a recuperar" value={recoveryAmount} onChange={setRecoveryAmount} />
           <Button disabled={recoveryAmount <= 0 || recoveryAmount > unlinked} onClick={() => {
-            if (recoverUnlinkedSavings(recoveryAmount)) setRecoveryOpen(false);
+            if (recoverUnlinkedSavings(recoveryAmount)) {
+              setRecoveryOpen(false);
+              playFeedback("confirm");
+            }
           }}>Devolver al disponible</Button>
         </div>
       </Modal>
@@ -143,6 +147,7 @@ function AhorroPage() {
             onClick={() => {
               // Usamos la estructura de metas, pero adaptada a cuentas
               addGoal({ name: accountName, target: 999999, saved: accountAmount, kind: "custom" });
+              playFeedback("confirm");
               setNewAccountOpen(false);
               setAccountName("");
               setAccountAmount(0);
