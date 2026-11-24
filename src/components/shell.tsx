@@ -129,6 +129,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
         position="top-center"
         theme={theme}
         toastOptions={{
+          actionButtonStyle: {
+            background: "var(--gold-fill)",
+            color: "var(--gold-ink)",
+            borderRadius: "0.75rem",
+            boxShadow: "var(--clay-accent)",
+            minHeight: "2rem",
+          },
           style: {
             background: "var(--surface)",
             border: "1px solid var(--line)",

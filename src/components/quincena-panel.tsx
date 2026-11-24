@@ -252,25 +252,6 @@ export function QuincenaPanel() {
 
           return (
             <div key={category.id} className="category-card card overflow-hidden">
-              <RadioGroup.Root
-                aria-label={`Dónde dejar el dinero de ${category.name}`}
-                orientation="horizontal"
-                value={category.moneyLocation === "cash" ? "cash" : "account"}
-                onValueChange={(value) => {
-                  const location = value === "cash" ? "cash" : "account";
-                  setCategoryMoneyLocation(category.id, location);
-                  playFeedback("select");
-                }}
-                data-feedback="off"
-                className="money-location-switch mx-4 grid max-w-xs grid-cols-2 gap-1 rounded-full border border-line bg-surface-2 p-1"
-              >
-                <RadioGroup.Item value="account" className="money-location-option">
-                  Cuenta
-                </RadioGroup.Item>
-                <RadioGroup.Item value="cash" className="money-location-option">
-                  Efectivo
-                </RadioGroup.Item>
-              </RadioGroup.Root>
               <div className="category-heading flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="category-identity flex min-w-0 flex-1 basis-40 flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -334,21 +315,51 @@ export function QuincenaPanel() {
                 </div>
               </div>
 
-              {(total > 0 || dueDate) && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3 text-xs text-muted">
-                  {paidAmount > 0 && !paid && (
-                    <span>Pagado {formatMoney(paidAmount)} · Pendiente {formatMoney(total - paidAmount)}</span>
-                  )}
-                  {dueDate && <time dateTime={dueDate}>Vence {dueDate.slice(8)}/{dueDate.slice(5, 7)}</time>}
-                  {!paid && total > 0 && (
-                    <Button type="button" variant="ghost" aria-haspopup="dialog" className="px-4 text-xs leading-snug text-gold [overflow-wrap:anywhere]" onClick={() => {
-                      setDuplicateConfirmed(false);
-                      setPaymentAmount(0);
-                      setPaymentId(category.id);
-                    }}>Registrar abono</Button>
-                  )}
-                </div>
+              {paidAmount > 0 && !paid && (
+                <dl className="category-payment-summary" aria-label="Resumen del abono">
+                  <div>
+                    <dt>Pagado</dt>
+                    <dd>{formatMoney(paidAmount)}</dd>
+                  </div>
+                  <div>
+                    <dt>Pendiente</dt>
+                    <dd>{formatMoney(total - paidAmount)}</dd>
+                  </div>
+                </dl>
               )}
+              {dueDate && (
+                <time className="category-due" dateTime={dueDate}>
+                  Vence {dueDate.slice(8)}/{dueDate.slice(5, 7)}
+                </time>
+              )}
+              <div className="category-actions">
+                <RadioGroup.Root
+                  aria-label={`Dónde dejar el dinero de ${category.name}`}
+                  orientation="horizontal"
+                  value={category.moneyLocation === "cash" ? "cash" : "account"}
+                  onValueChange={(value) => {
+                    const location = value === "cash" ? "cash" : "account";
+                    setCategoryMoneyLocation(category.id, location);
+                    playFeedback("select");
+                  }}
+                  data-feedback="off"
+                  className="money-location-switch"
+                >
+                  <RadioGroup.Item value="account" className="money-location-option">
+                    Cuenta
+                  </RadioGroup.Item>
+                  <RadioGroup.Item value="cash" className="money-location-option">
+                    Efectivo
+                  </RadioGroup.Item>
+                </RadioGroup.Root>
+                {!paid && total > 0 && (
+                  <Button type="button" variant="quiet" aria-haspopup="dialog" className="category-abono" onClick={() => {
+                    setDuplicateConfirmed(false);
+                    setPaymentAmount(0);
+                    setPaymentId(category.id);
+                  }}>Registrar abono</Button>
+                )}
+              </div>
 
               {open && (
                 <div id={`category-${category.id}`} className="category-content p-4 border-t border-line bg-surface-2/50">
