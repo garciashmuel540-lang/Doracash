@@ -53,14 +53,22 @@ export function FeedbackSettings() {
           }}
         />
       </label>
-      <Button
-        variant="quiet"
-        full
-        disabled={!haptics && (!sound || volume === 0)}
-        onClick={() => playFeedback("confirm")}
-      >
-        Probar efectos
-      </Button>
+      <div className="feedback-previews">
+        <Button
+          variant="quiet"
+          disabled={!sound || volume === 0}
+          onClick={() => playFeedback("confirm", "sound")}
+        >
+          Probar sonido
+        </Button>
+        <Button
+          variant="quiet"
+          disabled={!haptics}
+          onClick={() => playFeedback("confirm", "haptic")}
+        >
+          Probar vibración
+        </Button>
+      </div>
     </fieldset>
   );
 }

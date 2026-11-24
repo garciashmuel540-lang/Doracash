@@ -14,17 +14,18 @@
 /* Soft, opaque surfaces with a lit upper edge and a weighted underside. */
 :root, [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #1e2035; --fg: #f5f2ff; --muted: #bfbbd6;
-  --surface: #2b2e49; --surface-2: #232641; --line: #454864;
-  --gold: #c5c8ff; --gold-fill: #b8bcff; --gold-ink: #272651;
-  --selected: #3a416a; --selected-ink: #efefff; --hero-wash: #353a60;
-  --good: #a6e3c6; --bad: #ffb2bf;
-  --companion-red: var(--bad); --companion-yellow: #f8d4ad;
-  --overlay: #101225a6;
-  --clay-light: #e3e4ff20; --clay-depth: #11132980; --clay-cast: #0f102775;
-  --clay-knob: #faf7ff; --clay-button-light: #ffffff55; --clay-button-depth: #25225d4d;
-  --cat-0: #a6b9ff; --cat-1: #f6a8be; --cat-2: #ebc396;
-  --cat-3: #97d8c2; --cat-4: #e5aa9b; --cat-5: #b5a6ed;
+  --bg: #0b2139; --fg: #edf8ff; --muted: #b2cce1;
+  --surface: #143552; --surface-2: #0e2a46; --line: #2e5372;
+  --gold: #91d8ff; --gold-fill: #78caff; --gold-ink: #072a47;
+  --selected: #1a527c; --selected-ink: #eff9ff; --hero-wash: #164571;
+  --good: #a9e8c7; --bad: #ffafba;
+  --red-accent: #ff8797; --red-fill: #d2183b; --red-ink: #fff7f8;
+  --companion-red: var(--bad); --companion-yellow: #ffdb9d;
+  --overlay: #061524b5;
+  --clay-light: #c9ecff2b; --clay-depth: #04192e85; --clay-cast: #03142599;
+  --clay-knob: #f6fcff; --clay-button-light: #ffffff65; --clay-button-depth: #07528d50;
+  --cat-0: #69c5ff; --cat-1: #ff8ea1; --cat-2: #ebc396;
+  --cat-3: #97d8c2; --cat-4: #e99c86; --cat-5: #87aefb;
   --clay-lift: 0 10px 22px -8px var(--clay-cast), inset 0 2px 4px var(--clay-light), inset 0 -8px 14px var(--clay-depth);
   --clay-pill: 0 5px 8px -4px var(--clay-cast), inset 0 2px 3px var(--clay-light), inset 0 -4px 6px var(--clay-depth);
   --clay-accent: 0 6px 10px -4px var(--clay-cast), inset 0 2px 4px var(--clay-button-light), inset 0 -5px 8px var(--clay-button-depth);
@@ -38,17 +39,18 @@
 }
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #edeaf7; --fg: #272542; --muted: #57516e;
-  --surface: #faf7ff; --surface-2: #ece7f5; --line: #d9d1e9;
-  --gold: #49448e; --gold-fill: #bfc2ff; --gold-ink: #282651;
-  --selected: #d9dafb; --selected-ink: #35336e; --hero-wash: #e0e1ff;
-  --good: #20634c; --bad: #903449;
+  --bg: #e4f3ff; --fg: #0c2c49; --muted: #385b75;
+  --surface: #f8fcff; --surface-2: #e3f2ff; --line: #c2dced;
+  --gold: #075b92; --gold-fill: #83d1ff; --gold-ink: #092f4d;
+  --selected: #b6e3ff; --selected-ink: #103f61; --hero-wash: #caebff;
+  --good: #1b6246; --bad: #a7203a;
+  --red-accent: #c71d3c;
   --companion-yellow: #785029;
-  --overlay: #28234366;
-  --clay-light: #ffffffe6; --clay-depth: #b2a0d33b; --clay-cast: #66569155;
-  --clay-button-light: #ffffffa8; --clay-button-depth: #514d9c54;
-  --cat-0: #5262b9; --cat-1: #a64f72; --cat-2: #92632d;
-  --cat-3: #337b65; --cat-4: #a05543; --cat-5: #7759aa;
+  --overlay: #0b304866;
+  --clay-light: #ffffffe6; --clay-depth: #72acce42; --clay-cast: #3478a758;
+  --clay-button-light: #ffffffa8; --clay-button-depth: #1177b14d;
+  --cat-0: #067cba; --cat-1: #c83756; --cat-2: #92632d;
+  --cat-3: #2d7c66; --cat-4: #a34f3c; --cat-5: #3a62ac;
 }
 @layer base {
   html { -webkit-font-smoothing: antialiased; background: var(--bg); color: var(--fg); }
@@ -217,7 +219,7 @@
 }
 
 .page-eyebrow, .sidebar-eyebrow { color: var(--gold); font-size: .625rem; font-weight: 650; letter-spacing: .14em; }
-.page-eyebrow > span { margin-inline: .3rem; opacity: .5; }
+.page-eyebrow > span { margin-inline: .3rem; }
 .page-header { gap: 12px 20px; margin-bottom: 28px; grid-template-areas: "heading controls" "lede controls" "companions companions"; }
 .page-heading h1 { font-weight: 600; letter-spacing: -.045em; }
 .companion-restore { background-color: var(--surface); gap: 10px; font-weight: 500; }
@@ -394,7 +396,7 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
 .brand-lockup { display: flex; align-items: center; gap: 11px; }
 .brand-emblem { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--clay-control-radius); background: var(--gold-fill); color: var(--gold-ink); box-shadow: var(--clay-accent); transform: rotate(-5deg); }
 .brand-name { font-size: 23px; font-weight: 800; letter-spacing: -.06em; line-height: 1.2; }
-.brand-name > span { color: var(--gold); }
+.brand-name > span { color: var(--red-accent); }
 .brand-caption { font-size: 10px; color: var(--muted); margin-top: 5px; }
 .sidebar-eyebrow { font-size: 9px; color: var(--muted); letter-spacing: .14em; font-weight: 700; }
 .desktop-sidebar .nav-item { min-height: 52px; background: transparent; border: 0; box-shadow: none; color: var(--muted); border-radius: 14px; font-weight: 600; }
@@ -403,7 +405,7 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
 .page-header { margin-bottom: 28px; gap: 10px 16px; grid-template-areas: "heading controls" "lede controls" "companions companions"; }
 .header-controls { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--clay-pill); }
 .page-heading .page-eyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 11px; letter-spacing: 0; color: var(--muted); text-transform: none; font-weight: 600; margin-bottom: 12px; }
-.wordmark-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+.wordmark-dot { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--red-accent); }
 .page-heading h1 { font-size: clamp(28px, 3.5vw, 38px); font-weight: 700; letter-spacing: -.055em; line-height: 1.15; }
 .page-lede { font-size: 12px; line-height: 1.7; color: var(--muted); }
 .page-eyebrow { font-weight: 700; letter-spacing: .12em; font-size: 9px; color: var(--muted); }
@@ -621,6 +623,12 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
   box-shadow: var(--clay-accent);
 }
 
+.empty-balance-icon,
+.chat-composer .material-button[data-variant="primary"] {
+  background: var(--red-fill);
+  color: var(--red-ink);
+}
+
 .companion-restore,
 .companion-tabs > button,
 .chat-suggestions button,
@@ -709,6 +717,12 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
 
 .feedback-setting > svg {
   color: var(--gold);
+}
+
+.feedback-previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 8px;
 }
 
 .feedback-volume {
