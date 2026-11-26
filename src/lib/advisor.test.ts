@@ -61,3 +61,14 @@ test('reconoce acentos, categorías y varias partidas sin incluir gastos ajenos'
   assert.equal(result.gastos, 80);
   assert.equal(result.libre, 9370);
 });
+
+test('el saldo pendiente de tarjeta y el libre usan el abono una sola vez', () => {
+  const p = { ...period, categories: [{ ...period.categories[1], name: 'Pago de tarjeta', paidAmount: 734,
+    items: [{ ...period.categories[1].items[0], amount: 1306.24 }] }] };
+  const ctx = advisorContext(p, []);
+  assert.equal(ctx.compromisos, 734);
+  assert.equal(ctx.libre, 8766);
+  assert.equal(ctx.pendienteParaOtraQuincena, 572.24);
+  assert.equal(ctx.deudaTarjetaManual?.monto, 572.24);
+  assert.equal(ctx.deudaTarjetaManual?.partidas[0].incluidoEnPresupuesto, false);
+});

@@ -12,6 +12,7 @@ import { DailyTools } from "./daily-tools";
 import { ItemRow } from "@/components/item-row";
 import {
   categoryTotal,
+  deferredPaymentsTotal,
   allPaymentsComplete,
   categoryPendingAmount,
   categoryPaidAmount,
@@ -133,6 +134,7 @@ export function QuincenaPanel() {
 
   const bankBalance = estimatedBankBalance(period);
   const expenses = periodExpenses(period);
+  const deferred = deferredPaymentsTotal(period);
   const surplus = periodSurplus(period);
   const { cash, account } = pendingMoneyLocations(period);
   const rate = savingsRate(period);
@@ -174,6 +176,9 @@ export function QuincenaPanel() {
             <p className="text-xs text-muted">{ratePhrase(rate)}</p>
           </div>
         </div>
+        <p className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 text-sm text-muted" role="status">
+            Pendiente para la otra quincena <strong className="tabular-nums text-fg">{formatMoney(deferred)}</strong>
+        </p>
         <div className="budget-progress" role="progressbar" aria-label="Porcentaje del ingreso asignado" aria-valuemin={0} aria-valuemax={100} aria-valuenow={period.income > 0 ? Math.min(100, Math.max(0, Math.round((1 - rate) * 100))) : 0}><span style={{ width: `${period.income > 0 ? Math.min(100, Math.max(0, (1 - rate) * 100)) : 0}%` }} /></div>
         <p className="mt-2 text-xs text-muted">{period.income > 0 ? 'Lo que ya asignaste de tu ingreso' : 'Registra tu ingreso para ver tu margen'}</p>
         </div>
@@ -325,7 +330,7 @@ export function QuincenaPanel() {
                 </div>
               </div>
 
-              {paidAmount > 0 && !paid && (
+              {open && paidAmount > 0 && !paid && (
                 <dl className="category-payment-summary" aria-label="Resumen del abono">
                   <div>
                     <dt>Pagado</dt>
@@ -478,8 +483,9 @@ export function QuincenaPanel() {
         open={Boolean(paymentCategory)} onOpenChange={(open) => { if (!open) setPaymentId(null); }}>
         {paymentCategory && (
           <div className="flex flex-col gap-3 p-5">
-            <p className="text-sm text-muted">Pendiente {formatMoney(paymentRemaining)}</p>
+            <p className="text-sm text-muted">Saldo del rubro {formatMoney(paymentRemaining)}</p>
             <MoneyField label="Monto del abono" value={paymentAmount} onChange={v => { setDuplicateConfirmed(false); setPaymentAmount(v); }} />
+            {paymentAmount > 0 && paymentAmount < paymentRemaining && <p className="text-sm text-muted">Quedarán {formatMoney(paymentRemaining - paymentAmount)} para la otra quincena.</p>}
             {repeatedAbono && <p className="daily-note text-sm" role="status">Ya hay un abono por ese monto y concepto hoy.</p>}
             <Button disabled={paymentAmount <= 0 || paymentAmount > paymentRemaining} onClick={() => {
               if (repeatedAbono && !duplicateConfirmed) { setDuplicateConfirmed(true); return; }

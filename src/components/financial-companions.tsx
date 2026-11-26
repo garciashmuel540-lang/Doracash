@@ -115,7 +115,7 @@ export function FinancialCompanions() {
           <div className="companion-budget"><div><span>Ahorro adicional</span><strong><MoneyAmount value={context.ahorroSugerido} /></strong></div><div><span>Reserva para pendientes</span><strong><MoneyAmount value={context.reservaSugerida} outflow /></strong></div><div><span>Tope para gustitos</span><strong><MoneyAmount value={context.gustosSugeridos} /></strong></div></div>
           <p className="companion-note">Propuesta conservadora: hasta 10% del ingreso para ahorrar; del resto, 80% de reserva y 20% para gustos. Confirma que registraste todos tus pagos. No mueve dinero.</p>
         </>}
-        {context.deudaTarjetaManual && <p className="companion-note" role="status">Deuda de tarjeta registrada: <strong><MoneyAmount value={context.deudaTarjetaManual.monto} outflow /></strong>. Tomada de “Pago a tarjeta de crédito” de tu quincena. Actualízala allí; ya está incluida en el presupuesto.</p>}
+        {context.deudaTarjetaManual && <p className="companion-note" role="status">Deuda de tarjeta registrada: <strong><MoneyAmount value={context.deudaTarjetaManual.monto} outflow /></strong>. Tomada de “Pago a tarjeta de crédito” de tu quincena. Los abonos registrados se descuentan de este saldo.</p>}
         <details className="companion-note">
           <summary>{tarjeta ? 'Tarjeta guardada · ver o actualizar datos' : 'Añadir información de mi tarjeta'}</summary>
           <p>Solo se guarda en este navegador. Ambos compañeros reciben estos datos cuando les haces una consulta. Actualiza los saldos después de compras o pagos; no hay conexión con el banco.</p>

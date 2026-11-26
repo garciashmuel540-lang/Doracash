@@ -237,13 +237,34 @@ export function pendingMoneyLocations(period: Pick<Period, "categories">): Recor
   const totals = { account: 0, cash: 0 };
   for (const category of period.categories) {
     const location = category.moneyLocation === "cash" ? "cash" : "account";
-    totals[location] = roundMoney(totals[location] + categoryTotal(category) - categoryPaidAmount(category));
+    totals[location] = roundMoney(totals[location] + (categoryPaidAmount(category) === 0 ? categoryTotal(category) : 0));
   }
   return totals;
 }
 
 export function categoryPendingAmount(category: Category) {
   return roundMoney(categoryTotal(category) - categoryPaidAmount(category));
+}
+
+export function deferredPaymentsTotal(period: Pick<Period, "categories">) {
+  return roundMoney(period.categories.reduce((sum, category) =>
+    sum + (categoryPaidAmount(category) > 0 ? categoryPendingAmount(category) : 0), 0));
+}
+
+// Rollover and the current budget allocate payments in the same item order,
+// including categories with a mix of expenses and savings.
+export function splitPayment(category: Category) {
+  let remainingPayment = categoryPaidAmount(category);
+  return category.items.map(item => {
+    const paid = Math.min(remainingPayment, Number(item.amount));
+    remainingPayment = roundMoney(remainingPayment - paid);
+    return { item, paid, pending: roundMoney(item.amount - paid) };
+  });
+}
+
+export function budgetItems(category: Category): LineItem[] {
+  if (categoryPaidAmount(category) === 0 || categoryPendingAmount(category) === 0) return category.items;
+  return splitPayment(category).map(({ item, paid }) => ({ ...item, amount: paid }));
 }
 
 export function allPaymentsComplete(period: Period) {
@@ -267,14 +288,8 @@ export function categoriesForNextPeriod(period: Period, copyRecurring: boolean):
       return [copy];
     }
 
-    // Allocate previous payments in item order to retain each remaining item's budget role.
-    let paid = categoryPaidAmount(category);
-    const remainingItems = category.items.flatMap((item) => {
-      const covered = Math.min(paid, item.amount);
-      paid = roundMoney(paid - covered);
-      const amount = roundMoney(item.amount - covered);
-      return amount > 0 ? [{ ...item, amount }] : [];
-    });
+    const remainingItems = splitPayment(category).flatMap(({ item, pending }) =>
+      pending > 0 ? [{ ...item, amount: pending }] : []);
     const [carry] = cloneCategories([{
       ...category,
       recurring: isRecurring,
@@ -350,8 +365,8 @@ export function previousClosed(periods: Period[]) {
 }
 
 export function roleAmount(period: Period, role: Role) {
-  return period.categories.reduce((sum, category) => sum + category.items.reduce(
-    (total, item) => total + ((item.roleOverride ?? category.role) === role ? item.amount : 0), 0), 0);
+  return roundMoney(period.categories.reduce((sum, category) => sum + budgetItems(category).reduce(
+    (total, item) => total + ((item.roleOverride ?? category.role) === role ? Number(item.amount) : 0), 0), 0));
 }
 
 export function monthExpenseEstimate(period: Period, periods: Period[]) {
@@ -425,7 +440,7 @@ export function cloneCategories(categories: Category[]): Category[] {
 export function biggestCategory(period: Period) {
   let best: { category: Category; total: number } | null = null;
   for (const category of period.categories) {
-    const total = category.items.filter(item => (item.roleOverride ?? category.role) !== 'life').reduce((sum, item) => sum + item.amount, 0);
+    const total = budgetItems(category).filter(item => (item.roleOverride ?? category.role) !== 'life').reduce((sum, item) => sum + item.amount, 0);
     if (!best || total > best.total) best = { category, total };
   }
   return best && best.total > 0 ? best : null;

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { allPaymentsComplete, categoryPendingAmount, categoriesForNextPeriod, estimatedBankBalance, periodSurplus, type Period } from "./finance.ts";
+import { allPaymentsComplete, categoryPendingAmount, deferredPaymentsTotal, pendingMoneyLocations, periodExpenses, roleAmount, categoriesForNextPeriod, estimatedBankBalance, periodSurplus, type Period } from "./finance.ts";
 import { balanceFlow, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, todayInManagua, validDailyFields } from "./daily.ts";
 const records = new Map<string, string>();
 Object.defineProperty(globalThis, "window", { configurable: true, value: {
@@ -46,7 +46,7 @@ test("planned payment respects the budget, prevents overpayment and protects lat
   start();
   const m = get().recordExpense("test", { ...input, categoryId: "food", location: "account" }, false);
   assert.equal(typeof m, "object");
-  assert.equal(periodSurplus(current()), 800);
+  assert.equal(periodSurplus(current()), 920);
   assert.equal(estimatedBankBalance(current()), 920);
   assert.equal(categoryPendingAmount(current().categories[0]), 120);
   assert.equal(get().recordExpense("test", { ...input, amount: 140, categoryId: "food", location: "account" }, true), "invalid");
@@ -128,4 +128,31 @@ test("saved counts can be corrected and deleted after exiting, preserving the or
   assert.equal(current().reconciliation, undefined);
   assert.equal(current().movements?.length, 1);
   assert.equal(estimatedBankBalance(current()), 920);
+});
+
+test("los abonos separan el agregado pendiente, conservan rubros sin abono y trasladan solo el resto", () => {
+  const p = start();
+  const rubro = p.categories[0];
+  const card = { ...rubro, id: "tc", paidAmount: 734, items: [{ ...rubro.items[0], amount: 1306.24 }] };
+  const mixed = { ...rubro, id: "mixto", paidAmount: 75, items: [
+    { ...rubro.items[0], amount: 50, roleOverride: "life" as const },
+    { ...rubro.items[0], id: "deuda", amount: 125 },
+  ] };
+  const period = { ...p, categories: [card, mixed, rubro] };
+  assert.equal(deferredPaymentsTotal(period), 672.24);
+  assert.equal(periodExpenses(period), 959);
+  assert.equal(roleAmount(period, "life"), 50);
+  assert.equal(periodSurplus(period), -9);
+  assert.deepEqual(pendingMoneyLocations(period), { account: 200, cash: 0 });
+  const next = { ...p, categories: categoriesForNextPeriod(period, false) };
+  assert.equal(periodExpenses(next), 872.24);
+  assert.equal(deferredPaymentsTotal(next), 0);
+  useFinance.setState({ periods: [period] });
+  const undo = get().setCategoryPayment("tc", "full");
+  assert.equal(deferredPaymentsTotal(current()), 100);
+  assert.ok(undo?.());
+  assert.equal(deferredPaymentsTotal(current()), 672.24);
+  get().setCategoryPayment("tc", 0);
+  assert.equal(deferredPaymentsTotal(current()), 100);
+  assert.equal(periodExpenses(current()), 1531.24);
 });
