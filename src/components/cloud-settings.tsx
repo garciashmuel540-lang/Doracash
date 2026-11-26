@@ -18,7 +18,7 @@ export function useCloudFinance() {
   return { user, status };
 }
 
-export function CloudSettings({ user, status }: ReturnType<typeof useCloudFinance>) {
+export function CloudSettings({ user, status, recovery = false }: ReturnType<typeof useCloudFinance> & { recovery?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   if (!cloud) return null;
@@ -43,14 +43,14 @@ export function CloudSettings({ user, status }: ReturnType<typeof useCloudFinanc
       } catch { setError("No se pudo conectar con Supabase."); }
       finally { setBusy(false); }
     }}>
-      <p className="text-sm text-muted">Vinculá tu cuenta para guardar las quincenas y metas que ya tenés y los cambios que hagás después.</p>
+      <p className="text-sm text-muted">{recovery ? "Ingresá con la misma cuenta que usaste para guardar tus quincenas y metas." : "Vinculá tu cuenta para guardar las quincenas y metas que ya tenés y los cambios que hagás después."}</p>
       <label className="grid gap-1 text-sm">Correo de tu cuenta
         <input className="rounded-xl bg-surface-2 px-3 py-2" type="email" name="email" autoComplete="username" required />
       </label>
       <label className="grid gap-1 text-sm">Contraseña
         <input className="rounded-xl bg-surface-2 px-3 py-2" type="password" name="password" autoComplete="current-password" required />
       </label>
-      <Button type="submit" disabled={busy}>{busy ? "Conectando…" : "Vincular cuenta"}</Button>
+      <Button type="submit" disabled={busy}>{busy ? "Conectando…" : recovery ? "Iniciar sesión y recuperar" : "Vincular cuenta"}</Button>
     </form>}
     {error && <p role="alert" className="text-sm text-bad">{error}</p>}
   </section>;

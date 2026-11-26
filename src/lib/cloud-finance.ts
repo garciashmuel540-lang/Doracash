@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { useFinance, sanitizeData } from "./store";
+import { syncAction } from "./finance-sync";
 import type { Data } from "./finance";
 
 type Snapshot = Pick<Data, "periods" | "goals" | "theme"> & { introDismissed: boolean };
@@ -67,15 +68,16 @@ export function monitorFinance(userId: string, status: (message: string) => void
       const remoteHash = remote ? await digest(canonical(remote)) : null;
       if (stopped) return;
       if (canonical(localSnapshot()) !== localText) { queued = true; return; }
-      if (remoteHash === fingerprint) {
+      const action = syncAction(local, remote, fingerprint, remoteHash, previous);
+      if (action === "synced") {
         localStorage.setItem(checkpoint, fingerprint);
-      } else if (remote && (previous === fingerprint || (!previous && !local.periods.length && !local.goals.length))) {
+      } else if (remote && action === "restore") {
         useFinance.setState({ periods: remote.periods, goals: remote.goals, theme: remote.theme, introDismissed: !!remote.introDismissed });
         localStorage.setItem(checkpoint, remoteHash!);
-      } else if (remote && previous !== remoteHash) {
+      } else if (action === "conflict") {
         status("Hay cambios distintos en este dispositivo y en la nube. Ambas copias se conservan. Descargá el respaldo local antes de conciliarlas.");
         return;
-      } else if (!remote && !local.periods.length && !local.goals.length) {
+      } else if (action === "empty") {
         status("Cuenta vinculada. Tu primera quincena se guardará automáticamente.");
         return;
       } else {

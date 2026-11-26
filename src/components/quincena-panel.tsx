@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
 import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
-import { PageHeader } from "@/components/shell";
+import { Link } from "@tanstack/react-router";
+import { PageHeader, useShell } from "@/components/shell";
 import { playFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/cn";
 import { repeatedCharges, todayInManagua } from "@/lib/daily";
@@ -31,6 +32,7 @@ import {
 import { useFinance } from "@/lib/store";
 
 export function QuincenaPanel() {
+  const { openRecovery } = useShell();
   const periods = useFinance((state) => state.periods);
   const intent = useFinance((state) => state.intent);
   const clearIntent = useFinance((state) => state.clearIntent);
@@ -83,12 +85,20 @@ export function QuincenaPanel() {
         <PageHeader title="Tu quincena, en orden." lede="Un espacio para tu dinero y tus próximos pasos." />
         <section className="empty-balance hero-card">
           <span className="empty-balance-icon" aria-hidden="true"><Wallet className="size-7" /></span>
-          <p className="page-eyebrow">UN NUEVO COMIENZO</p>
-          <h2>Haz espacio para<br />lo que te importa.</h2>
-          <p>Organiza tus gastos, separa tus ahorros y decide qué puedes disfrutar esta quincena.</p>
-          <Button onClick={() => { openNext(); toast.success("Nueva quincena lista"); }}>
-            Abrir la siguiente <ArrowUpRight className="size-4" />
-          </Button>
+          <h2>{periods.length ? "Tu quincena está cerrada" : "Tus quincenas"}</h2>
+          <p>{periods.length
+            ? "Podés consultar las quincenas anteriores en el historial."
+            : "Si ya registraste gastos o ahorros, recuperá tu respaldo antes de abrir otra quincena."}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {periods.length ? (
+              <Link className="material-button inline-flex min-h-11 items-center px-5" to="/historial">Ver historial</Link>
+            ) : (
+              <Button onClick={openRecovery}>Recuperar mis registros</Button>
+            )}
+            <Button variant="quiet" onClick={() => { openNext(); toast.success("Nueva quincena lista"); }}>
+              {periods.length ? "Abrir la siguiente" : "Crear quincena"} <ArrowUpRight className="size-4" />
+            </Button>
+          </div>
           <div className="empty-balance-tags"><span><Wallet className="size-4" /> Tus gastos</span><span><PiggyBank className="size-4" /> Tus ahorros</span></div>
         </section>
       </div>

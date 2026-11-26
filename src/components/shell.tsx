@@ -21,6 +21,7 @@ const NAV = [
 
 type ShellContextValue = {
   openSettings: () => void;
+  openRecovery: () => void;
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
 };
@@ -34,7 +35,7 @@ export function useShell() {
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dialog, setDialog] = useState<"settings" | "recovery" | null>(null);
   const theme = useFinance((state) => state.theme);
   const setTheme = useFinance((state) => state.setTheme);
   const path = useLocation().pathname;
@@ -45,7 +46,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   return (
-    <ShellContext.Provider value={{ openSettings: () => setSettingsOpen(true), theme, setTheme }}>
+    <ShellContext.Provider value={{ openSettings: () => setDialog("settings"), openRecovery: () => setDialog("recovery"), theme, setTheme }}>
       <InteractionFeedback />
       <div className="app-frame">
       <a href="#main-content" className="skip-link">Ir al contenido</a>
@@ -77,7 +78,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="mt-auto pt-8">
-            <Button aria-haspopup="dialog" variant="ghost" className="w-full justify-start gap-3 text-muted hover:text-gold" onClick={() => setSettingsOpen(true)}>
+            <Button aria-haspopup="dialog" variant="ghost" className="w-full justify-start gap-3 text-muted hover:text-gold" onClick={() => setDialog("settings")}>
               <Settings className="size-5" /> Ajustes
             </Button>
           </div>
@@ -123,7 +124,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </nav>
 
       </div>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsDialog open={dialog !== null} recovery={dialog === "recovery"} onOpenChange={open => { if (!open) setDialog(null); }} />
       
       <Toaster
         position="top-center"
@@ -187,7 +188,7 @@ function Brand() {
   );
 }
 
-function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+function SettingsDialog({ open, recovery, onOpenChange }: { open: boolean; recovery: boolean; onOpenChange: (open: boolean) => void }) {
   const sync = useCloudFinance();
   const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState("");
@@ -234,19 +235,19 @@ function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   }
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Ajustes" description="Personalizá los efectos y administrá los datos de este dispositivo.">
+    <Modal open={open} onOpenChange={onOpenChange} title={recovery ? "Recuperar mis registros" : "Ajustes"} description={recovery ? "Usá la cuenta con la que guardaste tus registros o elegí un archivo de respaldo." : "Personalizá los efectos y administrá los datos de este dispositivo."}>
       <div className="flex flex-col gap-3">
-        <FeedbackSettings />
-        <CloudSettings {...sync} />
-        <Button variant="quiet" full onClick={download}>Descargar respaldo</Button>
+        {!recovery && <FeedbackSettings />}
+        <CloudSettings {...sync} recovery={recovery} />
+        {!recovery && <Button variant="quiet" full onClick={download}>Descargar respaldo</Button>}
         <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-surface-2 px-5 text-sm font-medium">
           Restaurar respaldo
           <input type="file" accept="application/json,.json" className="sr-only" onChange={(event) => onFile(event.target.files?.[0])} />
         </label>
         {error ? <p className="text-sm text-bad">{error}</p> : null}
-        {confirmReset ? (
+        {recovery ? <Button variant="quiet" onClick={() => onOpenChange(false)}>Volver a mi quincena</Button> : confirmReset ? (
           <div className="card p-4">
-            <p className="text-sm text-pretty">Se borra lo que cargaste y vuelve el punto de partida.</p>
+            <p className="text-sm text-pretty">Se reinicia la copia de este dispositivo. Si tu cuenta está vinculada, se volverán a cargar los registros guardados en la nube.</p>
             <div className="mt-3 flex gap-2">
               <Button variant="primary" onClick={() => { reset(); localStorage.removeItem("doracash-cards-v1"); setConfirmReset(false); onOpenChange(false); toast.success("Listo, volviste al inicio"); }}>Sí, reiniciar</Button>
               <Button variant="ghost" onClick={() => setConfirmReset(false)}>Cancelar</Button>
