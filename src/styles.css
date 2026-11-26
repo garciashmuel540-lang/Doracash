@@ -484,6 +484,28 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
   gap: 8px;
   padding: 0 var(--category-gutter) 16px;
 }
+.category-note {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 var(--category-gutter) 12px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.category-note:focus-within { border-color: var(--gold); }
+.category-note textarea {
+  flex: 1;
+  min-width: 0;
+  max-height: 6rem;
+  field-sizing: content;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+.category-note textarea::placeholder { color: var(--muted); }
 .money-location-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

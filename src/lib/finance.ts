@@ -13,6 +13,7 @@ export type LineItem = {
 
 export type Category = {
   id: string;
+  note?: string;
   name: string;
   role: Role;
   tone: number;
@@ -643,6 +644,7 @@ export function sanitizeData(raw: unknown): Data | null {
         categories.push({
           id: readText(category.id, uid("cat"), 40),
           name: readText(category.name, "Rubro", 40),
+          note: typeof category.note === "string" ? category.note : undefined,
           role,
           moneyLocation: category.moneyLocation === "cash" ? "cash" : "account",
           paid: category.paid === true,

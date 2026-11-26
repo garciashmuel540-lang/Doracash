@@ -29,7 +29,7 @@ function HistorialPage() {
         <div className="mt-6 flex flex-col gap-4">
           {closedPeriods.map((savedPeriod) => {
             const period = { ...savedPeriod, categories: savedPeriod.categories ?? [] };
-            const categories = period.categories.filter((category) => categoryTotal(category) > 0);
+            const categories = period.categories.filter((category) => categoryTotal(category) > 0 || category.note?.trim());
             const expenses = periodExpenses(period);
             const surplus = periodSurplus(period);
 
@@ -75,6 +75,7 @@ function HistorialPage() {
                               <h4 className="min-w-0 break-words font-medium">{category.name}</h4>
                               <span className="font-medium whitespace-nowrap"><MoneyAmount value={categoryTotal(category)} outflow /></span>
                             </div>
+                            {category.note && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{category.note}</p>}
                             <ul className="mt-2 space-y-2">
                               {category.items.filter((item) => item.amount > 0).map((item) => (
                                 <li key={item.id} className="flex justify-between items-start gap-3 text-xs">

@@ -50,6 +50,7 @@ type Store = {
   removeItem: (itemId: string) => void;
   addCategory: (name: string, role: Role) => string | null;
   renameCategory: (categoryId: string, name: string) => void;
+  setCategoryNote: (categoryId: string, note: string) => void;
   setCategoryRole: (categoryId: string, role: Role) => void;
   setCategoryMoneyLocation: (categoryId: string, moneyLocation: MoneyLocation) => void;
   setCategoryPayment: (categoryId: string, payment: number | "full") => Undo | null;
@@ -210,6 +211,13 @@ export const useFinance = create<Store>()(
             categories: period.categories.map((c) => (c.id === categoryId ? { ...c, name: name.trim().slice(0, 30) } : c)),
           }))
         ),
+
+      setCategoryNote: (categoryId, note) =>
+        set((state) => mapOpen(state, (period) => ({
+          ...period,
+          categories: period.categories.map(category =>
+            category.id === categoryId ? { ...category, note: note || undefined } : category),
+        }))),
 
       setCategoryRole: (categoryId, role) =>
         set((state) =>
@@ -514,6 +522,7 @@ export function sanitizeData(data: any): boolean {
     period.categories.every((category: any) =>
       category &&
       typeof category.id === "string" &&
+      (category.note === undefined || typeof category.note === "string") &&
       Array.isArray(category.items) &&
       category.items.every((item: any) =>
         item &&

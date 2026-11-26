@@ -1,6 +1,6 @@
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useEffect, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, Pencil, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
 import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
 import { Link } from "@tanstack/react-router";
@@ -39,6 +39,7 @@ export function QuincenaPanel() {
   const clearIntent = useFinance((state) => state.clearIntent);
   const setIncome = useFinance((state) => state.setIncome);
   const setItemRole = useFinance((state) => state.setItemRole);
+  const setCategoryNote = useFinance((state) => state.setCategoryNote);
   const setCategoryRole = useFinance((state) => state.setCategoryRole);
   const setCategoryMoneyLocation = useFinance((state) => state.setCategoryMoneyLocation);
   const setCategoryPayment = useFinance((state) => state.setCategoryPayment);
@@ -375,6 +376,13 @@ export function QuincenaPanel() {
                   }}>Registrar abono</Button>
                 )}
               </div>
+
+              <label className="category-note">
+                <Pencil className="size-3.5 shrink-0 text-muted" aria-hidden="true" />
+                <span className="sr-only">Nota de {category.name}</span>
+                <textarea rows={1} value={category.note ?? ""} placeholder="Escribí una nota…"
+                  onChange={event => setCategoryNote(category.id, event.currentTarget.value)} />
+              </label>
 
               {open && (
                 <div id={`category-${category.id}`} className="category-content p-4 border-t border-line bg-surface-2/50">
