@@ -44,18 +44,25 @@
 }
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #e4f3ff; --fg: #0c2c49; --muted: #385b75;
-  --surface: #f8fcff; --surface-2: #e3f2ff; --line: #c2dced;
-  --gold: #075b92; --gold-fill: #83d1ff; --gold-ink: #092f4d;
-  --selected: #b6e3ff; --selected-ink: #103f61; --hero-wash: #caebff;
-  --good: #1b6246; --bad: #a7203a;
-  --red-accent: #c71d3c;
-  --companion-yellow: #785029;
-  --overlay: #0b304866;
-  --clay-light: #fff; --clay-depth: #72acce58; --clay-cast: #3478a76b;
-  --clay-button-light: #ffffffc2; --clay-button-depth: #1177b16b;
-  --cat-0: #067cba; --cat-1: #c83756; --cat-2: #92632d;
-  --cat-3: #2d7c66; --cat-4: #a34f3c; --cat-5: #3a62ac;
+  --bg: #bed3df; --fg: #142e40; --muted: #354f60;
+  --surface: #d7e5eb; --surface-2: #cadde5; --line: #9db8c5;
+  --gold: #115778; --gold-fill: #155977; --gold-ink: #f2f9fa;
+  --selected: #a9d0db; --selected-ink: #153e51; --hero-wash: #a7cbd9;
+  --good: #15573f; --bad: #982743;
+  --red-accent: #a8334a; --companion-yellow: #754610;
+  --overlay: #0c293b70;
+  --clay-light: #ecf7fa55; --clay-depth: #244c6121; --clay-cast: #254e6533;
+  --clay-button-light: #def1f33b; --clay-button-depth: #18394738;
+  --clay-lift: 0 4px 12px -5px var(--clay-cast), inset 0 1px 0 var(--clay-light);
+  --clay-pill: 0 2px 4px -2px var(--clay-cast), inset 0 1px 0 var(--clay-light);
+  --clay-accent: 0 3px 6px -3px var(--clay-cast), inset 0 1px 0 var(--clay-button-light);
+  --clay-inset: inset 0 1px 3px var(--clay-depth);
+  --cat-0: #12618a; --cat-1: #a43651; --cat-2: #865a1e;
+  --cat-3: #236a55; --cat-4: #9a4d36; --cat-5: #475c9c;
+  --saldo-panel: #1b526b; --saldo-ink: #f3f9fa; --saldo-muted: #d7e9ee;
+  --honey: #f0c478; --honey-ink: #392c16;
+  --planning-panel: #e4d8be; --planning-edge: #bcac89;
+  --savings-panel: #c1dcd0; --savings-edge: #94b8a9;
 }
 @layer base {
   html { -webkit-font-smoothing: antialiased; background: var(--bg); color: var(--fg); }
@@ -917,4 +924,37 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
   .empty-balance-icon { width: 44px; height: 44px; margin-bottom: 10px; }
   .empty-balance-tags { margin-top: 12px; padding-top: 10px; }
   .sheet > div.mb-4 { margin-bottom: 8px; }
+}
+
+/* Light surfaces distinguish the available balance, planning and savings. */
+[data-theme="light"] .balance-overview { background: var(--surface-2); }
+[data-theme="light"] .balance-main {
+  --fg: var(--saldo-ink); --muted: var(--saldo-muted); --gold: var(--honey);
+  --gold-fill: var(--honey); --gold-ink: var(--honey-ink);
+  --bad: #ffd0d6; --line: #64899a;
+  color: var(--fg); background: var(--saldo-panel);
+}
+[data-theme="light"] .balance-details { background: var(--hero-wash); }
+[data-theme="light"] .balance-details .budget-progress { background: #83aebf; }
+[data-theme="light"] .balance-details .material-button[data-variant="quiet"] {
+  background: #c7dfe7; border-color: #769eae;
+}
+[data-theme="light"] .daily-tools { background: #ccdee7; }
+[data-theme="light"] .spending-tools {
+  background: var(--planning-panel); border-color: var(--planning-edge);
+}
+[data-theme="light"] .bank-summary,
+[data-theme="light"] .savings-page > .hero-card {
+  background: var(--savings-panel); border-color: var(--savings-edge);
+}
+[data-theme="light"] .mobile-navigation {
+  --muted: #d8e6eb; --gold-fill: #afd4df; --gold-ink: #113749;
+  background: #244657; border-color: #244657;
+}
+[data-theme="light"] .desktop-sidebar { background: #adc6d3; }
+[data-theme="light"] .desktop-sidebar .nav-item[aria-current="page"] {
+  background: var(--gold-fill); color: var(--gold-ink);
+}
+[data-theme="light"] :is(.rubro-filters, .daily-form) :is(input:not([type=checkbox]), select) {
+  border-color: #7492a1;
 }
