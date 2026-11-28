@@ -1,3 +1,4 @@
+import { ExportRubros } from "@/components/export-rubros";
 import { MoneyAmount } from "@/components/ui";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell";
@@ -117,6 +118,7 @@ function HistorialPage() {
                     {m.kind === "transfer" ? <span>Traslado · {formatMoney(m.amount)}</span> : <MoneyAmount value={-m.amount} />}
                   </div>)}
                 </details>}
+                <ExportRubros period={period} />
               </article>
             );
           })}

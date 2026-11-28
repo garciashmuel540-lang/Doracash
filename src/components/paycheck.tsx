@@ -28,7 +28,7 @@ function PaycheckForm({ period, close }: { period: Period; close: () => void }) 
 export function Paycheck({ period }: { period: Period }) {
   const [open, setOpen] = useState(false);
   const received = period.income > 0;
-  return <div>
+  return <div className="paycheck-summary">
     <p className="balance-income-label">{received ? "Pago recibido de esta quincena" : "Pago de esta quincena"}</p>
     {received && <p className="mt-1 font-display text-2xl tabular-nums">{formatMoney(period.income)}</p>}
     {received && period.incomeReceivedOn && <p className="text-xs text-muted">Recibido el <time dateTime={period.incomeReceivedOn}>{period.incomeReceivedOn.split("-").reverse().join("/")}</time></p>}

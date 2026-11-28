@@ -32,6 +32,7 @@ type Undo = () => boolean;
 type ExpenseInput = { name: string; amount: number; date: string; location: MoneyLocation; categoryId?: string };
 type Store = {
   recordExpense: (periodId: string, entry: ExpenseInput, allowDuplicate: boolean) => "duplicate" | "invalid" | Movement;
+  editMovement: (periodId: string, original: Movement, edit: Pick<Movement, "name" | "amount" | "date">) => string | null;
   setSundayPlan: (periodId: string, plan: NonNullable<Period["sundays"]>) => void;
   restoreMovement: (periodId: string, id: string) => boolean;
   undoMovement: (periodId: string, id: string) => boolean;
@@ -271,6 +272,51 @@ export const useFinance = create<Store>()(
               recurring: false, paid: true, paidAmount: amount, items: [{ id: uid("item"), name, amount, max: Math.max(100, amount) }] }];
         set(mapOpen(state, p => ({ ...p, movements: [...movements, movement], categories })));
         return movement;
+      },
+
+      editMovement: (periodId, original, edit) => {
+        const state = get();
+        const period = openPeriod(state);
+        const entries = period?.movements ?? [];
+        const index = entries.indexOf(original);
+        if (!period || period.id !== periodId || index < 0) return "El registro cambió. Volvé a abrirlo.";
+        const name = edit.name.trim();
+        const amount = rounded(edit.amount);
+        if (!name || name.length > 40 || !Number.isFinite(amount) || !amount || Math.abs(amount) > 100_000_000 ||
+            Math.sign(amount) !== Math.sign(original.amount)) return "Revisá el concepto y el monto.";
+        if (!validDate(edit.date) || (edit.date !== original.date && (edit.date < period.start.slice(0, 10) ||
+            edit.date > period.end.slice(0, 10) || edit.date > todayInManagua()))) return "Elegí una fecha dentro de la quincena.";
+        const movements = [...entries];
+        movements[index] = { ...original, name, amount, date: edit.date };
+        let categories = period.categories;
+        const category = categories.find(c => c.id === original.categoryId);
+        if (original.kind === "expense") {
+          if (!category || category.items.length !== 1 || categoryTotal(category) !== original.amount ||
+              categoryPaidAmount(category) !== original.amount) return "El rubro cambió. Revisá sus abonos.";
+          movements[index].after = amount;
+          const item = category.items[0];
+          categories = categories.map(c => c !== category ? c : { ...c, name, paidAmount: amount, paid: true,
+            items: [{ ...item, name, amount, max: Math.max(item.max, amount) }] });
+        } else if (original.kind === "payment" && original.amount !== amount) {
+          if (!category || original.before === undefined) return "Revisá el rubro de este abono.";
+          let previous = original.before;
+          let corrected = previous;
+          const total = categoryTotal(category);
+          for (let i = index; i < movements.length; i++) {
+            const m = movements[i];
+            if (m.categoryId !== category.id) continue;
+            if (m.kind !== "payment" || m.before !== previous || m.after === undefined) return "Revisá los abonos posteriores de este rubro.";
+            previous = m.after;
+            const next = rounded(corrected + m.amount);
+            if (next < 0 || next > total) return "Con ese cambio los abonos quedarían fuera del monto del rubro.";
+            movements[i] = { ...m, before: corrected, after: next };
+            corrected = next;
+          }
+          if (categoryPaidAmount(category) !== previous) return "El saldo del rubro cambió. Revisá sus abonos.";
+          categories = categories.map(c => c !== category ? c : { ...c, paidAmount: corrected, paid: corrected === total });
+        }
+        set(mapOpen(state, p => ({ ...p, categories, movements })));
+        return null;
       },
 
       recordTransfer: (periodId, from, amount) => {

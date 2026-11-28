@@ -248,3 +248,33 @@ test("un pago anterior cuenta como recibido sin atribuirle una fecha prevista", 
   assert.ok(validDailyFields(current()));
   assert.equal(validDailyFields({ ...current(), incomeReceivedOn: "2026-02-31" }), false);
 });
+
+test("editar un gasto rápido actualiza el rubro, el saldo y su importe recuperable", () => {
+  start();
+  const m = get().recordExpense("test", input, false);
+  assert.ok(typeof m === "object");
+  const edit = { name: "Pasaje", date: today, amount: 45 };
+  assert.equal(get().editMovement("test", m, edit), null);
+  assert.equal(periodSurplus(current()), 755);
+  assert.equal(get().editMovement("test", m, edit) !== null, true);
+  assert.ok(get().undoMovement("test", m.id));
+  assert.ok(get().restoreMovement("test", m.id));
+  assert.equal(current().movements?.at(-1)?.amount, 45);
+  assert.equal(categoryPendingAmount(current().categories.at(-1)!), 0);
+});
+
+test("editar un abono anterior conserva los importes posteriores y rechaza sobrepagos", () => {
+  start();
+  get().setCategoryPayment("food", 50);
+  get().setCategoryPayment("food", 120);
+  const original = current().movements![0];
+  const edit = { name: "Primer abono", date: today, amount: 80 };
+  assert.equal(get().editMovement("test", original, { ...edit, amount: 150 }) !== null, true);
+  assert.equal(categoryPendingAmount(current().categories[0]), 80);
+  assert.equal(get().editMovement("test", original, edit), null);
+  const second = current().movements![1];
+  assert.deepEqual([second.amount, second.before, second.after], [70, 80, 150]);
+  assert.equal(categoryPendingAmount(current().categories[0]), 50);
+  assert.ok(get().undoMovement("test", second.id));
+  assert.equal(categoryPendingAmount(current().categories[0]), 120);
+});

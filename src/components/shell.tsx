@@ -182,7 +182,7 @@ function Brand() {
       <span className="brand-emblem" aria-hidden="true"><WalletCards className="size-6" /></span>
       <div>
         <p className="brand-name">doracash<span>.</span></p>
-        <p className="brand-caption">Tu dinero, a tu ritmo.</p>
+        <p className="brand-caption">Tu bolsillo al instante.</p>
       </div>
     </div>
   );

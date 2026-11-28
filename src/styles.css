@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@fontsource/baskervville/latin-400.css";
 
 @theme {
   --font-sans: "Manrope", "Arial", ui-sans-serif, system-ui, sans-serif;
@@ -839,3 +840,73 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
 
 .daily-form .sunday-date { display: flex; flex-direction: row; align-items: center; gap: .75rem; min-height: 44px; }
 .daily-form .sunday-date input { width: 1.1rem; height: 1.1rem; min-height: 0; accent-color: var(--color-gold); }
+
+:root { --heading-serif: "Bell MT", "Baskervville", Georgia, serif; }
+.page-heading h1, .sheet h2, .app-main h2.font-display, .section-heading h2,
+.history-page article h2, .spending-tools > summary {
+  font-family: var(--heading-serif); font-weight: 400; letter-spacing: -.025em;
+}
+.rubro-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 4px 13px; }
+.rubro-bar h3 { min-width: 0; }
+.rubro-bar h3 button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; text-align: left; }
+.rubro-bar h3 button span:nth-child(2) { min-width: 0; }
+.rubro-bar strong, .rubro-bar small { display: block; }
+.rubro-bar strong { font-size: .875rem; line-height: 1.25; }
+.rubro-bar small, .rubro-note-preview { font-size: .75rem; color: var(--muted); }
+.rubro-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; }
+.rubro-amount { min-height: 44px; max-width: 12ch; font-size: 1rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.rubro-note-preview { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 16px 7px 28px; }
+.rubro-config { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; border-top: 1px solid var(--line); margin: 0 var(--category-gutter); padding-block: 6px; }
+.rubro-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 10px; }
+.rubro-filters input, .rubro-filters select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 6px 10px; font-size: .875rem; color: var(--fg); }
+.rubro-payments { margin: 0 var(--category-gutter) 6px; font-size: .875rem; }
+.rubro-payments > summary, .spending-tools > summary { cursor: pointer; padding-block: 10px; min-height: 44px; }
+.pending-link { width: 100%; min-height: 44px; display: flex; gap: 10px; justify-content: space-between; align-items: center; text-align: left; color: var(--gold); border-top: 1px solid var(--line); }
+.spending-tools { margin-top: 10px; padding-inline: 14px; }
+.spending-tools[open] { padding-bottom: 12px; }
+.spending-tools > summary { font-size: 1.15rem; }
+.daily-row > span { overflow-wrap: anywhere; min-width: 0; }
+@media (max-width: 767px) {
+  .app-main { padding: 12px 12px 18px; }
+  .page-header { margin-bottom: 10px; gap: 2px 8px; }
+  .page-header:not(:has(.companions[data-active="true"])) { grid-template-areas: "heading controls" "lede companions"; }
+  .page-header:not(:has(.companions[data-active="true"])) .companion-dock { justify-content: flex-end; }
+  .page-lede { align-self: center; font-size: .75rem; }
+  .page-heading .page-eyebrow { margin-bottom: 1px; font-size: .65rem; line-height: 1.2; }
+  .page-heading h1 { font-size: 1.55rem; }
+  .companion-dock { min-height: 44px; }
+  .companion-restore { padding: 4px 9px; min-height: 44px; }
+  .card, .hero-card { border-radius: 18px; }
+  .balance-main, .balance-details { padding: 10px 14px; }
+  .balance-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; }
+  .balance-topline, .balance-caption { grid-column: 1 / -1; }
+  .balance-caption { grid-row: 3; margin-top: 2px; font-size: .75rem; line-height: 1.35; }
+  .balance-amount { margin: 3px 0; font-size: clamp(1.6rem, 7vw, 2rem); letter-spacing: -.045em; }
+  .balance-main > .material-button { width: auto; margin: 0; padding: 4px 9px; min-height: 44px; font-size: .75rem; }
+  .balance-main > .material-button > svg:last-child { display: none; }
+  .paycheck-summary { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0 8px; align-items: center; }
+  .paycheck-summary p { grid-column: 1; margin: 0; }
+  .paycheck-summary p.font-display { font-size: 1.12rem; }
+  .paycheck-summary button { grid-column: 2; grid-row: 1 / span 3; margin: 0; padding-inline: 9px; font-size: .75rem; }
+  .balance-stats { margin-top: 6px; }
+  .balance-stats .font-display { font-size: 1rem; margin-top: 0; }
+  .balance-details > details, .balance-details > div.mt-3, .budget-progress { margin-top: 3px; }
+  .balance-details > details > summary { padding-block: 6px; }
+  .daily-tools { margin-top: 9px; padding: 8px 10px; }
+  .daily-actions { gap: 5px; }
+  .daily-actions > button { padding-inline: 7px; font-size: .75rem; min-height: 44px; }
+  .daily-tools details.mt-3 { margin-top: 4px; }
+  .daily-tools .daily-row { gap: 3px; }
+  .section-heading { margin-top: 15px; }
+  .distribution-strip, .bank-summary { margin-top: 8px; padding-block: 6px; }
+  .distribution-strip dt, .balance-stats > div > p:first-child { font-size: .75rem; }
+  .distribution-strip dd { font-size: 1rem; }
+  .mobile-navigation { margin: 3px 8px 0; }
+  .mobile-nav-track { padding-block: 3px; }
+  .mobile-navigation .nav-item { min-height: 44px; gap: 2px; padding-block: 4px; }
+  .empty-balance, .savings-page > .hero-card, .plan-page .card, .plan-page .hero-card, .history-page article { padding: 15px; }
+  .savings-page > .hero-card > p:nth-child(2) { font-size: 2rem; margin-top: 6px; }
+  .empty-balance-icon { width: 44px; height: 44px; margin-bottom: 10px; }
+  .empty-balance-tags { margin-top: 12px; padding-top: 10px; }
+  .sheet > div.mb-4 { margin-bottom: 8px; }
+}

@@ -45,7 +45,7 @@ export function parseExpense(text: string) {
   return { amount, name: match[2].trim() };
 }
 
-function comparable(name: string) {
+export function comparable(name: string) {
   return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 

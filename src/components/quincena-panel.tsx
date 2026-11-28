@@ -7,12 +7,14 @@ import { Link } from "@tanstack/react-router";
 import { PageHeader, useShell } from "@/components/shell";
 import { playFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/cn";
-import { repeatedCharges, todayInManagua } from "@/lib/daily";
+import { comparable, repeatedCharges, todayInManagua } from "@/lib/daily";
+import { ExportRubros } from "./export-rubros";
 import { Paycheck } from "./paycheck";
 import { SpendingPlanner } from "./spending-planner";
 import { DailyTools } from "./daily-tools";
 import { ItemRow } from "@/components/item-row";
 import {
+  type Period,
   categoryTotal,
   deferredPaymentsTotal,
   allPaymentsComplete,
@@ -59,6 +61,8 @@ export function QuincenaPanel() {
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addToSavingsOpen, setAddToSavingsOpen] = useState(false);
@@ -76,7 +80,7 @@ export function QuincenaPanel() {
   if (!period) {
     return (
       <div className="dashboard-home">
-        <PageHeader title="Tu quincena, en orden." lede="Un espacio para tu dinero y tus próximos pasos." />
+        <PageHeader title="Mi quincena" lede="Un espacio para tu dinero y tus próximos pasos." />
         <section className="empty-balance hero-card">
           <span className="empty-balance-icon" aria-hidden="true"><Wallet className="size-7" /></span>
           <h2>{periods.length ? "Tu quincena está cerrada" : "Tus quincenas"}</h2>
@@ -111,6 +115,26 @@ export function QuincenaPanel() {
       ? [{ category, date, days: daysUntil(date) }] : [];
   }).filter((entry) => entry.days <= 3).sort((a, b) => a.date.localeCompare(b.date));
 
+  const query = comparable(search);
+  const rubros = period.categories.filter(c => !quickIds.has(c.id));
+  const visibleRubros = rubros.filter(c => {
+    const paid = categoryPaidAmount(c), pending = categoryPendingAmount(c);
+    const matches = filter === "all" || (filter === "pending" && pending > 0) ||
+      (filter === "partial" && paid > 0 && pending > 0) || (filter === "paid" && paid > 0 && !pending);
+    return matches && (!query || [c.name, c.note ?? "", ...c.items.map(item => item.name)].some(value => comparable(value).includes(query)));
+  });
+
+  function showCategory(id: string) {
+    setRolloverOpen(false);
+    setSearch(""); setFilter("all");
+    setOpenIds(prev => ({ ...prev, [id]: true }));
+    requestAnimationFrame(() => {
+      const button = document.getElementById("rubro-" + id);
+      button?.focus({ preventScroll: true });
+      button?.scrollIntoView({ block: "center" });
+    });
+  }
+
   function announceChange(message: string, undo: (() => boolean) | null) {
     if (!undo) return;
     toast.success(message, {
@@ -138,7 +162,7 @@ export function QuincenaPanel() {
   return (
     <div className="dashboard-home">
       <PageHeader
-        title="Tu quincena, en orden."
+        title="Mi quincena"
         lede={formatRange(period.start, period.end)}
       />
 
@@ -166,7 +190,7 @@ export function QuincenaPanel() {
         </div>
         <details className="mt-3 text-sm text-muted"><summary className="cursor-pointer py-2">Pendiente para la otra quincena · <strong>{formatMoney(deferred)}</strong></summary>
           {period.categories.filter(c => categoryPaidAmount(c) > 0 && categoryPendingAmount(c) > 0).map(c =>
-            <div className="daily-row" key={c.id}><span>{c.name}</span><strong>{formatMoney(categoryPendingAmount(c))}</strong></div>)}
+            <button type="button" className="pending-link" key={c.id} onClick={() => showCategory(c.id)}><span>{c.name}</span><strong>{formatMoney(categoryPendingAmount(c))} ›</strong></button>)}
           {!deferred && <p>Sin saldos pendientes de abonos parciales.</p>}
         </details>
         {hasFunds && <div className="mt-3">
@@ -178,8 +202,8 @@ export function QuincenaPanel() {
         </div>
       </section>
 
-      <SpendingPlanner key={"plan-" + period.id} period={period} />
       <DailyTools key={period.id} period={period} />
+      <SpendingPlanner key={"plan-" + period.id} period={period} />
 
       {hasFunds && <details className="bank-summary card mt-4 px-4 py-3">
         <summary className="cursor-pointer text-sm font-medium">
@@ -223,7 +247,7 @@ export function QuincenaPanel() {
       )}
 
       <div className="section-heading mt-8 flex flex-wrap items-center justify-between gap-3">
-        <div><p className="page-eyebrow mb-1">CADA CÓRDOBA, EN SU LUGAR</p><h2 className="font-display text-2xl">Tus rubros</h2></div>
+        <h2 className="font-display text-2xl">Tus rubros</h2>
         <Button aria-haspopup="dialog" variant="ghost" onClick={() => setAddCategoryOpen(true)} className="text-gold bg-surface-2 px-3">
           <Plus className="size-4" /> Nuevo Rubro
         </Button>
@@ -249,8 +273,16 @@ export function QuincenaPanel() {
         </div>
       </dl>
 
-      <div className="rubros-list mt-4 grid gap-3">
-        {period.categories.filter(c => !quickIds.has(c.id)).map((category) => {
+      {rubros.length > 0 && <div className="rubro-filters">
+        <input aria-label="Buscar rubro o nota" type="search" placeholder="Buscar rubro o nota" value={search} onChange={e => setSearch(e.target.value)} />
+        <select aria-label="Estado del rubro" value={filter} onChange={e => setFilter(e.target.value)}>
+          <option value="all">Todos</option><option value="pending">Pendientes</option>
+          <option value="partial">Con abonos</option><option value="paid">Pagados</option>
+        </select>
+      </div>}
+      {rubros.length > 0 && !visibleRubros.length && <p className="mt-3 text-sm text-muted" role="status">No hay rubros que coincidan. <button className="underline" onClick={() => { setSearch(""); setFilter("all"); }}>Ver todos</button></p>}
+      <div className="rubros-list mt-3 grid gap-2">
+        {visibleRubros.map((category) => {
           const total = categoryTotal(category);
           const open = openIds[category.id] ?? false;
           const isSaving = category.role === "life";
@@ -263,14 +295,20 @@ export function QuincenaPanel() {
 
           return (
             <div key={category.id} className="category-card card overflow-hidden">
-              <div className="category-heading flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="category-identity flex min-w-0 flex-1 basis-40 flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: `var(--cat-${category.tone})` }} />
-                    <h3 className="min-w-0 flex-1 font-medium text-base break-words"><button className="category-disclosure" aria-expanded={open} aria-controls={`category-${category.id}`} onClick={() => setOpenIds(prev => ({ ...prev, [category.id]: !open }))}>{category.name}<ChevronDown className={cn("size-4 shrink-0 text-muted transition-transform", open && "rotate-180")} /></button></h3>
-                  </div>
-
-                  {/* Botón para cambiar entre Gasto / Ahorro directamente aquí */}
+              <div className="rubro-bar">
+                <h3><button type="button" id={"rubro-" + category.id} aria-expanded={open} aria-controls={open ? `category-${category.id}` : undefined}
+                  onClick={() => setOpenIds(prev => ({ ...prev, [category.id]: !open }))}>
+                  <span className="rubro-dot" style={{ backgroundColor: `var(--cat-${category.tone})` }} />
+                  <span><strong>{category.name}</strong><small>{total === 0 ? "Sin monto" : paid ? "Pagado" : paidAmount > 0 ? `Abonado · faltan ${formatMoney(total - paidAmount)}` : "Pendiente"}</small></span>
+                  <ChevronDown className={cn("size-4 shrink-0 text-muted", open && "rotate-180")} />
+                </button></h3>
+                <button type="button" className="rubro-amount" aria-label={`Editar monto de ${category.name}`} onClick={() => {
+                  setEditingCategory(category.id); setOpenIds(prev => ({ ...prev, [category.id]: true })); setCategoryAmount(total);
+                }}><MoneyAmount value={total} outflow={hasOutflow} /></button>
+              </div>
+              {!open && category.note && <p className="rubro-note-preview">{category.note}</p>}
+              {open && <div id={`category-${category.id}`}>
+                <div className="rubro-config">
                   <div className="flex items-center gap-2 mt-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); setCategoryRole(category.id, "need"); }}
@@ -287,9 +325,7 @@ export function QuincenaPanel() {
                       Ahorro
                     </button>
                   </div>
-                </div>
 
-                <div className="category-payment flex min-w-0 max-w-full flex-wrap items-center gap-3">
                   <label
                     className={cn(
                       "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-xs font-medium",
@@ -310,23 +346,8 @@ export function QuincenaPanel() {
                     />
                     {paid ? "Pagado" : paidAmount > 0 ? "Pago parcial" : "Pendiente"}
                   </label>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingCategory(category.id);
-                      setOpenIds(prev => ({ ...prev, [category.id]: true }));
-                      setCategoryAmount(total);
-                    }}
-                    className="font-display text-lg tabular-nums rounded-xl px-3 py-2 break-all text-gold hover:bg-surface-2 active:scale-95 transition"
-                    aria-label={`Editar monto de ${category.name}`}
-                  >
-                    <MoneyAmount value={total} outflow={hasOutflow} />
-                  </button>
                 </div>
-              </div>
-
-              {open && paidAmount > 0 && !paid && (
+              {paidAmount > 0 && !paid && (
                 <dl className="category-payment-summary" aria-label="Resumen del abono">
                   <div>
                     <dt>Pagado</dt>
@@ -379,8 +400,8 @@ export function QuincenaPanel() {
                   onChange={event => setCategoryNote(category.id, event.currentTarget.value)} />
               </label>
 
-              {open && (
-                <div id={`category-${category.id}`} className="category-content p-4 border-t border-line bg-surface-2/50">
+              <CategoryPayments period={period} categoryId={category.id} />
+                <div className="category-content p-4 border-t border-line bg-surface-2/50">
                   <ul className="flex flex-col gap-4">
                     {category.items.map((item) => (
                       <ItemRow
@@ -451,7 +472,7 @@ export function QuincenaPanel() {
                     <Trash2 className="size-4" /> Quitar rubro
                   </Button>
                 </div>
-              )}
+              </div>}
             </div>
           );
         })}
@@ -474,8 +495,9 @@ export function QuincenaPanel() {
           <div className="daily-note"><div>Saldo estimado al cierre · <strong>{formatMoney(bankBalance)}</strong></div>
             <div>Pagos y abonos registrados · {formatMoney(paidRubrosTotal(period))}</div>
             <details><summary>Pendiente para la próxima quincena · {formatMoney(period.categories.reduce((sum, c) => sum + categoryPendingAmount(c), 0))}</summary>
-              {period.categories.filter(c => categoryPendingAmount(c) > 0).map(c => <div className="daily-row" key={c.id}><span>{c.name}</span><strong>{formatMoney(categoryPendingAmount(c))}</strong></div>)}
+              {period.categories.filter(c => categoryPendingAmount(c) > 0).map(c => <button type="button" className="pending-link" key={c.id} onClick={() => showCategory(c.id)}><span>{c.name}</span><strong>{formatMoney(categoryPendingAmount(c))} ›</strong></button>)}
             </details></div>
+          <ExportRubros period={period} />
           <div>Saldo que querés trasladar<MoneyField label="Saldo que querés trasladar" value={carry} onChange={setCarry} /></div>
           {carry > Math.max(0, bankBalance) && <p className="text-sm text-bad">El traslado supera tu saldo estimado.</p>}
           {Boolean(period.trash?.length) && <p className="text-sm text-muted">Tenés movimientos en la papelera. Podés restaurarlos antes de cerrar.</p>}
@@ -530,7 +552,8 @@ export function QuincenaPanel() {
             disabled={!newCategoryName.trim()}
             onClick={() => {
               if (newCategoryName.trim()) {
-                addCategory(newCategoryName, "need");
+                const id = addCategory(newCategoryName, "need");
+                if (id) showCategory(id);
                 playFeedback("confirm");
                 setNewCategoryName("");
                 setAddCategoryOpen(false);
@@ -575,4 +598,17 @@ export function QuincenaPanel() {
       </Modal>
     </div>
   );
+}
+
+function CategoryPayments({ period, categoryId }: { period: Period; categoryId: string }) {
+  const entries = (period.movements ?? []).filter(m => m.kind === "payment" && m.categoryId === categoryId);
+  if (!entries.length) return null;
+  return <details className="rubro-payments">
+    <summary>Historial de abonos ({entries.length})</summary>
+    {[...entries].reverse().map(m => <div className="daily-row" key={m.id}>
+      <div><strong>{m.amount < 0 ? "Ajuste" : "Abono"} · {m.date.slice(8)}/{m.date.slice(5, 7)}</strong>
+        <small>{m.location === "cash" ? "Efectivo" : "Cuenta"} · {m.name}</small></div>
+      <span>{formatMoney(m.amount)}</span>
+    </div>)}
+  </details>;
 }

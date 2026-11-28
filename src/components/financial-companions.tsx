@@ -106,7 +106,7 @@ export function FinancialCompanions() {
     {open && <section className="companion-panel" aria-label={`Consejos de ${name}`} onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}>
       <header className="companion-header"><div><p className="companion-eyebrow">TU EQUIPO FINANCIERO</p><h2>{name} te acompaña</h2></div><button className="companion-icon" aria-label="Minimizar compañeros" onClick={close}><ChevronDown size={20} /></button></header>
       <div className="companion-tabs" role="group" aria-label="Elegir compañero">
-        {(['doraemon', 'shinchan'] as const).map(c => <button key={c} aria-pressed={c === character} onClick={() => { setCharacter(c); }}><span>{c === 'doraemon' ? 'Doraemon' : 'Shin Chan'}<small>{c === 'doraemon' ? 'Tu bolsillo del futuro' : 'Gustitos con cabeza'}</small></span></button>)}
+        {(['doraemon', 'shinchan'] as const).map(c => <button key={c} aria-pressed={c === character} onClick={() => { setCharacter(c); }}><span>{c === 'doraemon' ? 'Doraemon' : 'Shin Chan'}<small>{c === 'doraemon' ? 'Tu bolsillo al instante' : 'Gustitos con cabeza'}</small></span></button>)}
       </div>
       <div className="companion-scroll">
         <p className="companion-eyebrow"><Sparkles size={13} /> CÁLCULO CON TUS DATOS</p>

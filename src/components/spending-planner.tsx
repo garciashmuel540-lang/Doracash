@@ -39,8 +39,8 @@ export function SpendingPlanner({ period }: { period: Period }) {
   const hasFunds = periodFunds(period) > 0;
   const after = rounded(available - price);
   const afterDaily = dailyAllowance(after, days);
-  return <section className="card mt-4 p-4" aria-label="Plan de gasto diario">
-    <h2 className="font-display text-xl">Planificar mis gastos</h2>
+  return <details className="card spending-tools" aria-label="Plan de gasto diario">
+    <summary>Planificar mis gastos</summary>
     {hasFunds && daily !== null && <details className="mt-2 text-sm">
       <summary className="cursor-pointer py-2">¿Cuánto puedo gastar por día?</summary>
       <p className="text-muted">Si repartís el saldo libre entre los {days} {days === 1 ? "día que queda" : "días que quedan"} de esta quincena, son <strong>{formatMoney(daily)} por día</strong>.</p>
@@ -59,5 +59,5 @@ export function SpendingPlanner({ period }: { period: Period }) {
           {afterDaily !== null && <p>Podrías gastar {formatMoney(afterDaily)} por día durante el resto de esta quincena.</p>}</>}</div>
       </div>}
     </Modal>
-  </section>;
+  </details>;
 }

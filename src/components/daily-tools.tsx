@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeftRight, CalendarDays, Plus, Scale, Undo2 } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, Pencil, Plus, Scale, Undo2 } from "lucide-react";
 import { playFeedback } from "@/lib/feedback";
 import { feedbackToast as toast } from "@/lib/feedback-toast";
-import { Button, Modal } from "./ui";
-import { categoryPendingAmount, formatMoney, type MoneyLocation, type Period } from "@/lib/finance";
+import { Button, Modal, MoneyField } from "./ui";
+import { categoryPendingAmount, formatMoney, periodFunds, periodSurplus, type MoneyLocation, type Period } from "@/lib/finance";
 import { balanceFlow, duplicateIds, expectedBalances, forecast, hasComparison, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
 import { useFinance } from "@/lib/store";
 
@@ -64,6 +64,9 @@ function QuickExpense({ period, close }: { period: Period; close: () => void }) 
       </select></label>
     </div></details>
     {matches.length > 0 && <p role="status" className="daily-note">Posible cobro repetido. Ya figura {matches[0].name} por {formatMoney(matches[0].amount)} el {shortDate(date)} en {place[matches[0].location].toLowerCase()}. {confirm === fingerprint && "Confirmá solo si fue otro pago."}</p>}
+    {parsed && !target && periodFunds(period) > 0 && parsed.amount > periodSurplus(period) && <p className="daily-note" role="status">
+      Al registrar este gasto, te faltarían <strong>{formatMoney(parsed.amount - periodSurplus(period))}</strong> para cubrir la quincena.
+    </p>}
     {error && <p role="alert" className="text-bad">{error}</p>}
     <Button type="submit">{matches.length && confirm === fingerprint ? "Registrar otro pago igual" : "Registrar gasto"}</Button>
   </form>;
@@ -157,10 +160,31 @@ function Calendar({ period }: { period: Period }) {
   </div>;
 }
 
+function MovementEditor({ period, movement, close }: { period: Period; movement: Movement; close: () => void }) {
+  const [name, setName] = useState(movement.name);
+  const [amount, setAmount] = useState(Math.abs(movement.amount));
+  const [date, setDate] = useState(movement.date);
+  const [error, setError] = useState("");
+  const edit = useFinance(s => s.editMovement);
+  return <form className="daily-form" onSubmit={e => {
+    e.preventDefault();
+    const message = edit(period.id, movement, { name, amount: amount * Math.sign(movement.amount), date });
+    if (message) { setError(message); return; }
+    toast.success("Movimiento actualizado"); close();
+  }}>
+    <label>Concepto<input required maxLength={40} value={name} onChange={e => setName(e.target.value)} /></label>
+    <div>Monto del movimiento<MoneyField value={amount} onChange={setAmount} label="Monto del movimiento" /></div>
+    <label>Fecha del movimiento<input type="date" required value={date} onChange={e => setDate(e.target.value)} /></label>
+    {error && <p role="alert">{error}</p>}
+    <Button type="submit" disabled={!amount || !name.trim()}>Guardar cambios</Button>
+  </form>;
+}
+
 export function DailyTools({ period }: { period: Period }) {
   const [tool, setTool] = useState<Tool>(null);
   const [showAll, setShowAll] = useState(false);
   const [onlyMatches, setOnlyMatches] = useState(false);
+  const [editing, setEditing] = useState<Movement | null>(null);
   const [query, setQuery] = useState("");
   const restore = useFinance(s => s.restoreMovement);
   const entries = period.movements;
@@ -183,6 +207,7 @@ export function DailyTools({ period }: { period: Period }) {
       {(showAll ? filtered : filtered.slice(0, 5)).map(m => <div className="daily-row" key={m.id}>
         <div><strong>{m.name}</strong><small>{shortDate(m.date)} · {place[m.location]}{m.kind === "transfer" ? " → " + place[m.location === "cash" ? "account" : "cash"] : ""}{matches.has(m.id) && " · Posible repetido"}</small></div>
         <span className={m.kind === "transfer" ? "" : m.amount >= 0 ? "text-bad" : "text-good"}>{formatMoney(m.kind === "transfer" ? m.amount : -m.amount)}</span>
+        <button type="button" className="daily-undo" aria-label={"Editar movimiento " + m.name} onClick={() => setEditing(m)}><Pencil className="size-4" /></button>
         <button type="button" className="daily-undo" aria-label={"Deshacer " + m.name} onClick={() => undo(period.id, m.id)}><Undo2 className="size-4" /></button>
       </div>)}
       {filtered.length > 5 && <Button variant="ghost" onClick={() => setShowAll(!showAll)}>{showAll ? "Ver menos" : "Ver todos"}</Button>}
@@ -196,6 +221,9 @@ export function DailyTools({ period }: { period: Period }) {
           else toast.info("Revisá los abonos de este rubro. Restaurá primero el abono anterior y comprobá el monto del rubro.");
         }}>Restaurar</Button></div>)}
     </details>}
+    <Modal open={editing !== null} onOpenChange={open => { if (!open) setEditing(null); }} title="Editar movimiento">
+      {editing && <MovementEditor key={editing.id} movement={editing} period={period} close={() => setEditing(null)} />}
+    </Modal>
     <Modal open={tool !== null} onOpenChange={open => { if (!open) setTool(null); }} title={tool === "expense" ? "Gasto rápido" : tool === "check" ? "Conciliar saldos" : "Calendario de la quincena"}>
       {tool === "expense" ? <QuickExpense period={period} close={() => setTool(null)} /> : tool === "check" ? <Reconcile period={period} /> : tool === "calendar" ? <Calendar period={period} /> : null}
     </Modal>
