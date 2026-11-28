@@ -132,6 +132,17 @@ export function currentBalances(period: Period): Balances {
   return period.reconciliation ? expectedBalances(period.reconciliation.first, flow) : flow;
 }
 
+/** Offer a repair only when the deposit is outside every saved count and can explain the cash deficit. */
+export function depositToReview(period: Period, balances = currentBalances(period)) {
+  if (balances.cash >= 0) return null;
+  const movement = period.movements?.filter(m => m.kind === "transfer").at(-1);
+  if (!movement || movement.location !== "cash" ||
+      (period.reconciliation && movement.date <= period.reconciliation.last.date)) return null;
+  const before = afterTransfer(balances, "account", movement.amount);
+  if (before.cash < 0 || before.account < movement.amount) return null;
+  return { movement, corrected: afterTransfer(before, "account", movement.amount) };
+}
+
 const DAY = 86400000;
 
 export function dailyAllowance(available: number, days: number) {

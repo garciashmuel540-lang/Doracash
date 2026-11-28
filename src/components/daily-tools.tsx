@@ -4,7 +4,7 @@ import { playFeedback } from "@/lib/feedback";
 import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { Button, Modal, MoneyField } from "./ui";
 import { categoryPendingAmount, formatMoney, periodFunds, periodSurplus, type MoneyLocation, type Period } from "@/lib/finance";
-import { afterTransfer, currentBalances, duplicateIds, expectedBalances, forecast, hasComparison, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
+import { afterTransfer, currentBalances, depositToReview, duplicateIds, expectedBalances, forecast, hasComparison, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
 import { useFinance } from "@/lib/store";
 
 const place = { account: "Cuenta", cash: "Efectivo" };
@@ -94,6 +94,9 @@ function Reconcile({ period }: { period: Period }) {
   const c = readAmount(cash), a = readAmount(account, true), t = readAmount(transfer);
   const record = period.reconciliation;
   const balances = currentBalances(period);
+  const cashDeficit = balances.cash < 0;
+  const repair = depositToReview(period, balances);
+  const correctDeposit = useFinance(s => s.correctDepositToWithdrawal);
   const expected = record && edit !== "first" && (edit === "last" ? expectedBalances(record.first, record.last.flow) : balances);
   const insufficient = t !== null && t > 0 && t > balances[from];
   const preview = t !== null && t > 0 && !insufficient ? afterTransfer(balances, from, t) : null;
@@ -123,13 +126,24 @@ function Reconcile({ period }: { period: Period }) {
         <li><strong>Volvé a contar.</strong> Compará tus saldos reales con los esperados. Si hay diferencia, revisá el sentido del traslado y los gastos que pagaste desde el último conteo.</li>
       </ol>
     </div>
-    <section className="daily-note" aria-label="Saldos esperados ahora" aria-live="polite">
-      <h3>Saldos esperados ahora</h3>
-      <dl className="mt-2 grid grid-cols-2 gap-3">{(["cash", "account"] as const).map(k =>
+    <section className="daily-note" aria-label={cashDeficit ? "Saldos por revisar" : "Saldos esperados ahora"} aria-live="polite">
+      <h3>{cashDeficit ? "Revisá la distribución de tu dinero" : "Saldos esperados ahora"}</h3>
+      <p>Total entre efectivo y cuenta · <strong>{formatMoney(rounded(balances.cash + balances.account))}</strong></p>
+      {!cashDeficit && <dl className="mt-2 grid grid-cols-2 gap-3">{(["cash", "account"] as const).map(k =>
         <div key={k}><dt className="text-sm text-muted">{place[k]}</dt><dd className="break-words font-semibold tabular-nums">{formatMoney(balances[k])}</dd></div>
-      )}</dl>
+      )}</dl>}
       {!record && <p className="mt-2">Estimación según tus registros. Guardá tu primer conteo para usar tus saldos reales como punto de partida.</p>}
-      {balances.cash < 0 && <p className="mt-2">El efectivo esperado quedó en negativo. Revisá si anotaste un depósito cuando en realidad hiciste un retiro, o si falta registrar efectivo.</p>}
+      {cashDeficit && <div className="mt-2 space-y-2">
+        <p>Los movimientos dejan el efectivo en {formatMoney(balances.cash)} y la cuenta en {formatMoney(balances.account)}. Revisá el origen del dinero para poder comparar ambos saldos.</p>
+        {repair && !edit && <>
+          <p>El {shortDate(repair.movement.date)} registraste un depósito de {formatMoney(repair.movement.amount)}. ¿Sacaste ese dinero del banco? Al corregirlo quedarían <strong>{formatMoney(repair.corrected.cash)} en efectivo</strong> y <strong>{formatMoney(repair.corrected.account)} en cuenta</strong>.</p>
+          <Button variant="quiet" onClick={() => {
+            if (correctDeposit(period.id, repair.movement)) { setTransferMessage(""); toast.success("Traslado corregido a retiro"); }
+            else toast.info("El movimiento cambió. Revisá los saldos actuales.");
+          }}>Sí, fue un retiro</Button>
+        </>}
+        <p>Si depositaste billetes, revisá el efectivo del primer conteo y los retiros que faltan registrar.</p>
+      </div>}
     </section>
     {!edit && <details className="border-b border-line pb-2"><summary><ArrowLeftRight className="inline size-4" /> Registrar traslado</summary>
       <form className="daily-form mt-2" onSubmit={e => {
@@ -169,7 +183,9 @@ function Reconcile({ period }: { period: Period }) {
         const value = k === "cash" ? c : a;
         return <label key={k}>{k === "cash" ? "Efectivo contado" : "Saldo que muestra tu banco"}
           <input ref={k === "cash" ? cashField : undefined} inputMode="decimal" placeholder="C$ 0.00" required value={k === "cash" ? cash : account} onChange={e => (k === "cash" ? setCash : setAccount)(e.target.value)} />
-          {expected && <small>Esperado {formatMoney(expected[k])}{value !== null && " · " + difference(value, expected[k])}</small>}
+          {expected && <small>{expected.cash < 0 ? "Distribución pendiente de revisión" :
+            (k === "cash" ? "Efectivo esperado " : "En cuenta se esperan ") + formatMoney(expected[k]) +
+              (value !== null ? " · " + difference(value, expected[k]) : "")}</small>}
         </label>;
       })}
       <Button type="submit" disabled={a === null || c === null}>{edit ? "Guardar corrección" : record ? "Guardar comparación" : "Guardar primer conteo"}</Button>

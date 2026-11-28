@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { currentSundayReserve, allPaymentsComplete, categoryPendingAmount, deferredPaymentsTotal, pendingMoneyLocations, periodExpenses, roleAmount, categoriesForNextPeriod, estimatedBankBalance, periodSurplus, type Period } from "./finance.ts";
-import { balanceFlow, currentBalances, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, todayInManagua, validDailyFields } from "./daily.ts";
+import { balanceFlow, currentBalances, depositToReview, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, todayInManagua, validDailyFields } from "./daily.ts";
 const records = new Map<string, string>();
 Object.defineProperty(globalThis, "window", { configurable: true, value: {
   localStorage: {
@@ -109,6 +109,23 @@ test("un depósito anterior en sentido equivocado se puede deshacer sin cambiar 
   assert.ok(get().recordTransfer(p.id, "account", 1915));
   assert.deepEqual(currentBalances(current()), { cash: 1915, account: 4422.93 });
   assert.deepEqual(current().reconciliation, record);
+});
+
+test("corregir el depósito heredado a retiro conserva el total, el historial y el primer conteo", async () => {
+  const p = { ...start(), income: 6337.93 };
+  const first = { date: "2026-11-27", counted: { cash: 0, account: 6337.93 }, flow: balanceFlow(p) };
+  const deposit = { id: "dep", kind: "transfer" as const, date: "2026-11-28", location: "cash" as const, amount: 1915, name: "Depósito a cuenta" };
+  useFinance.setState({ periods: [{ ...p, reconciliation: { first, last: first }, movements: [deposit] }] });
+  const review = depositToReview(current())!;
+  assert.deepEqual(review.corrected, { cash: 1915, account: 4422.93 });
+  assert.equal(depositToReview({ ...current(), reconciliation: { first, last: { ...first, date: deposit.date } } }), null);
+  assert.equal(get().correctDepositToWithdrawal(p.id, deposit), true);
+  assert.equal(get().correctDepositToWithdrawal(p.id, deposit), false);
+  await useFinance.persist.rehydrate();
+  assert.deepEqual(currentBalances(current()), review.corrected);
+  assert.deepEqual(current().movements, [{ ...deposit, location: "account", name: "Retiro de efectivo" }]);
+  assert.deepEqual(current().reconciliation, { first, last: first });
+  assert.equal(depositToReview(current()), null);
 });
 
 test("calendar includes overdue, partial and same-day dues; excludes paid and later charges", () => {

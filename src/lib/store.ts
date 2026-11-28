@@ -25,7 +25,7 @@ import {
   type Period,
   type Role,
 } from "./finance.ts";
-import { balanceFlow, currentBalances, hasComparison, repeatedCharges, rounded, todayInManagua, validDailyFields, validDate, type Balances, type Movement } from "./daily.ts";
+import { balanceFlow, currentBalances, depositToReview, hasComparison, repeatedCharges, rounded, todayInManagua, validDailyFields, validDate, type Balances, type Movement } from "./daily.ts";
 
 type Undo = () => boolean;
 
@@ -36,6 +36,7 @@ type Store = {
   setSundayPlan: (periodId: string, plan: NonNullable<Period["sundays"]>) => void;
   restoreMovement: (periodId: string, id: string) => boolean;
   undoMovement: (periodId: string, id: string) => boolean;
+  correctDepositToWithdrawal: (periodId: string, movement: Movement) => boolean;
   recordTransfer: (periodId: string, from: MoneyLocation, amount: number) => Movement | null;
   checkBalances: (periodId: string, counted: Balances, edit?: "first" | "last") => boolean;
   removeLastCheck: (periodId: string) => boolean;
@@ -329,6 +330,15 @@ export const useFinance = create<Store>()(
           name: from === "account" ? "Retiro de efectivo" : "Depósito a cuenta", location: from, amount: clampMoney(amount) };
         set(mapOpen(state, p => ({ ...p, movements: [...(p.movements ?? []), movement] })));
         return movement;
+      },
+
+      correctDepositToWithdrawal: (periodId, movement) => {
+        const state = get();
+        const period = openPeriod(state);
+        if (period?.id !== periodId || depositToReview(period)?.movement !== movement) return false;
+        set(mapOpen(state, p => ({ ...p, movements: p.movements?.map(m => m === movement
+          ? { ...m, location: "account", name: "Retiro de efectivo" } : m) })));
+        return true;
       },
 
       checkBalances: (periodId, counted, edit) => {
