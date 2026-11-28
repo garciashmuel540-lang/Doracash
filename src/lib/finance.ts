@@ -46,6 +46,7 @@ export type Period = {
   movements?: Movement[];
   reconciliation?: Reconciliation;
   payday?: string;
+  incomeReceivedOn?: string;
   openingBalance?: number;
   carriedOut?: number;
   sundays?: { fare: number; food: number; excluded: string[] };
@@ -343,23 +344,29 @@ export function todayInManagua() {
   return [year, month, day].map(n => String(n).padStart(2, "0")).join("-");
 }
 
-export function sundayBudget(period: Period, start: string, payday: string) {
+export function sundayBudget(period: Period, start: string, untilExclusive: string) {
   const dayMs = 86400000;
   const first = new Date(start);
   const offset = (7 - first.getUTCDay()) % 7;
   const firstSunday = first.getTime() + offset * dayMs;
-  const count = Math.max(0, Math.ceil((Date.parse(payday) - firstSunday) / (7 * dayMs)));
+  const count = Math.max(0, Math.ceil((Date.parse(untilExclusive) - firstSunday) / (7 * dayMs)));
   const excluded = new Set(period.sundays?.excluded ?? []);
-  const skipped = [...excluded].filter(d => d >= start && d < payday && new Date(d).getUTCDay() === 0).length;
+  const skipped = [...excluded].filter(d => d >= start && d < untilExclusive && new Date(d).getUTCDay() === 0).length;
   const remaining = Math.max(0, count - skipped);
   const perSunday = (period.sundays?.fare ?? 0) + (period.sundays?.food ?? 0);
   return { remaining, reserve: roundMoney(remaining * perSunday), firstSunday, count };
 }
 
+export function dayAfterPeriod(period: Period) {
+  const end = new Date(period.end.slice(0, 10));
+  end.setUTCDate(end.getUTCDate() + 1);
+  return end.toISOString().slice(0, 10);
+}
+
 export function currentSundayReserve(period: Period) {
   if (!period.sundays || period.status === "closed") return 0;
   const start = [period.start.slice(0, 10), todayInManagua()].sort()[1];
-  return sundayBudget(period, start, period.payday ?? nextQuincena(period.end).start).reserve;
+  return sundayBudget(period, start, dayAfterPeriod(period)).reserve;
 }
 
 export function periodSurplus(period: Period, reserve = currentSundayReserve(period)) {
@@ -705,6 +712,7 @@ export function sanitizeData(raw: unknown): Data | null {
       start,
       end,
       income: readMoney(row.income),
+      incomeReceivedOn: typeof row.incomeReceivedOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.incomeReceivedOn) ? row.incomeReceivedOn : undefined,
       categories,
       status: row.status === "closed" ? "closed" : "open",
       setAside: readMoney(row.setAside),

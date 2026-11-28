@@ -1,6 +1,6 @@
 import {
   categoryDueDate, categoryPaidAmount, categoryPendingAmount, estimatedBankBalance,
-  sundayBudget, nextQuincena, periodFunds, parseMoney, periodSurplus,
+  sundayBudget, dayAfterPeriod, periodFunds, parseMoney, periodSurplus,
   type MoneyLocation, type Period,
 } from "./finance.ts";
 
@@ -130,22 +130,24 @@ export function dailyAllowance(available: number, days: number) {
 }
 
 export function forecast(period: Period, today: string) {
-  const payday = period.payday ?? nextQuincena(period.end).start;
+  const end = period.end.slice(0, 10);
+  const untilExclusive = dayAfterPeriod(period);
+  const dueThrough = period.income > 0 ? end : (period.payday ?? end);
   const due = period.categories.flatMap(category => {
     const amount = categoryPendingAmount(category);
     const date = category.carriedDueDate ?? categoryDueDate(period.start, category.dueDay);
-    return amount > 0 && date && date <= payday ? [{ id: category.id, name: category.name, date, amount }] : [];
+    return amount > 0 && date && date <= dueThrough ? [{ id: category.id, name: category.name, date, amount }] : [];
   }).sort((a, b) => a.date.localeCompare(b.date));
   const undated = rounded(period.categories.reduce((sum, c) =>
     sum + (!c.dueDay && !c.carriedDueDate ? categoryPendingAmount(c) : 0), 0));
   const start = today < period.start.slice(0, 10) ? period.start.slice(0, 10) : today;
-  const days = Math.max(0, (Date.parse(payday) - Date.parse(start)) / DAY);
-  const sundays = sundayBudget(period, start, payday);
+  const days = Math.max(0, (Date.parse(untilExclusive) - Date.parse(start)) / DAY);
+  const sundays = sundayBudget(period, start, untilExclusive);
   const available = periodSurplus(period, sundays.reserve);
   let balance = estimatedBankBalance(period);
   const rows = due.map(entry => ({ ...entry, balance: balance = rounded(balance - entry.amount) }));
   const daily = dailyAllowance(available, days);
-  return { payday, days, daily, rows, undated, sundays, available };
+  return { dueThrough, days, daily, rows, undated, sundays, available };
 }
 
 function balances(value: unknown, signed: boolean): boolean {
@@ -155,6 +157,7 @@ function balances(value: unknown, signed: boolean): boolean {
 }
 
 export function validDailyFields(p: Period) {
+  if (p.incomeReceivedOn !== undefined && !validDate(p.incomeReceivedOn)) return false;
   if (p.payday !== undefined && !validDate(p.payday)) return false;
   const earlier = p.reconciliation?.earlierComparisons;
   if (earlier !== undefined && !Array.isArray(earlier)) return false;

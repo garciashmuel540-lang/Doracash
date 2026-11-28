@@ -1,6 +1,6 @@
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useEffect, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, Pencil, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Pencil, Plus, PiggyBank, Trash2, Wallet, X } from "lucide-react";
 import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { MoneyAmount, Button, Modal, MoneyField } from "@/components/ui";
 import { Link } from "@tanstack/react-router";
@@ -8,6 +8,7 @@ import { PageHeader, useShell } from "@/components/shell";
 import { playFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/cn";
 import { repeatedCharges, todayInManagua } from "@/lib/daily";
+import { Paycheck } from "./paycheck";
 import { SpendingPlanner } from "./spending-planner";
 import { DailyTools } from "./daily-tools";
 import { ItemRow } from "@/components/item-row";
@@ -19,7 +20,6 @@ import {
   categoryPaidAmount,
   categoryDueDate,
   paidRubrosTotal,
-  daysLabel,
   daysUntil,
   estimatedBankBalance,
   formatMoney,
@@ -28,8 +28,6 @@ import {
   periodFunds,
   pendingMoneyLocations,
   periodSurplus,
-  ratePhrase,
-  rateTone,
   savingsRate,
 } from "@/lib/finance";
 import { useFinance } from "@/lib/store";
@@ -39,7 +37,6 @@ export function QuincenaPanel() {
   const periods = useFinance((state) => state.periods);
   const intent = useFinance((state) => state.intent);
   const clearIntent = useFinance((state) => state.clearIntent);
-  const setIncome = useFinance((state) => state.setIncome);
   const setItemRole = useFinance((state) => state.setItemRole);
   const setCategoryNote = useFinance((state) => state.setCategoryNote);
   const setCategoryRole = useFinance((state) => state.setCategoryRole);
@@ -134,31 +131,28 @@ export function QuincenaPanel() {
   const surplus = periodSurplus(period);
   const { cash, account } = pendingMoneyLocations(period);
   const rate = savingsRate(period);
-  const tone = rateTone(rate);
-  const safeEnd = (period.end && !isNaN(new Date(period.end).getTime()))
-    ? period.end
-    : new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
-  const days = daysUntil(safeEnd);
+  const hasFunds = periodFunds(period) > 0;
+  const received = period.income > 0;
+  const reserved = periodFunds(period) - expenses - surplus;
 
   return (
     <div className="dashboard-home">
       <PageHeader
         title="Tu quincena, en orden."
-        lede={`${formatRange(period.start, period.end)} · ${daysLabel(days)}`}
+        lede={formatRange(period.start, period.end)}
       />
 
       <section className="hero-card balance-overview">
         <div className="balance-main">
-          <div className="balance-topline"><p className="balance-eyebrow"><Wallet className="size-4" /> Disponible para ti</p><span className="currency-badge">C$ · NIO</span></div>
-          <p className={cn("balance-amount font-display tabular-nums", surplus < 0 ? "text-bad" : "text-fg")}><MoneyAmount value={surplus} /></p>
-          <p className="balance-caption">Cuida tu futuro. Disfruta el presente.</p>
-          <Button aria-haspopup="dialog" className="mt-6" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }} disabled={surplus <= 0}>
+          <div className="balance-topline"><p className="balance-eyebrow"><Wallet className="size-4" /> {hasFunds ? (surplus < 0 ? "Te falta para cubrir la quincena" : "Lo que te queda libre") : "Gastos anotados"}</p><span className="currency-badge">C$ · NIO</span></div>
+          <p className={cn("balance-amount font-display tabular-nums", hasFunds && surplus < 0 ? "text-bad" : "text-fg")}>{formatMoney(hasFunds ? Math.abs(surplus) : expenses)}</p>
+          <p className="balance-caption">{received ? "Después de tus gastos, ahorros y reservas de esta quincena." : hasFunds ? "Disponible del saldo anterior mientras registrás tu pago." : "Anotá tus gastos. Cuando te paguen, registrá el monto para ver cuánto te queda."}</p>
+          {surplus > 0 && <Button aria-haspopup="dialog" className="mt-6" onClick={() => { setSavingsAmount(surplus); setAddToSavingsOpen(true); }}>
             <PiggyBank className="size-4" /> Agregar a ahorros <ArrowUpRight className="size-4" />
-          </Button>
+          </Button>}
         </div>
         <div className="balance-details">
-          <label className="balance-income-label"><ArrowDownLeft className="size-4" /> Ingreso de la quincena</label>
-          <div className="balance-income mt-2"><MoneyField label="Ingreso neto de la quincena" value={period.income} onChange={setIncome} /></div>
+          <Paycheck key={period.id} period={period} />
           {Boolean(period.openingBalance) && <p className="mt-2 text-xs text-muted">Saldo de la quincena anterior · {formatMoney(period.openingBalance!)}</p>}
           <div className="balance-stats mt-5 flex items-start justify-between gap-4 text-sm">
           <div>
@@ -166,11 +160,8 @@ export function QuincenaPanel() {
             <p className="font-display text-xl tabular-nums"><MoneyAmount value={expenses} outflow /></p>
           </div>
           <div className="text-right">
-            <p className="text-muted">Margen disponible</p>
-            <p className={cn("font-display text-xl tabular-nums", tone === "good" ? "text-good" : tone === "bad" ? "text-bad" : "")}>
-              {Math.round(rate * 100)}%
-            </p>
-            <p className="text-xs text-muted">{ratePhrase(rate)}</p>
+            <p className="text-muted">Ahorros y reservas</p>
+            <p className="font-display text-xl tabular-nums">{formatMoney(reserved)}</p>
           </div>
         </div>
         <details className="mt-3 text-sm text-muted"><summary className="cursor-pointer py-2">Pendiente para la otra quincena · <strong>{formatMoney(deferred)}</strong></summary>
@@ -178,22 +169,27 @@ export function QuincenaPanel() {
             <div className="daily-row" key={c.id}><span>{c.name}</span><strong>{formatMoney(categoryPendingAmount(c))}</strong></div>)}
           {!deferred && <p>Sin saldos pendientes de abonos parciales.</p>}
         </details>
-        <div className="budget-progress" role="progressbar" aria-label="Porcentaje del ingreso asignado" aria-valuemin={0} aria-valuemax={100} aria-valuenow={periodFunds(period) > 0 ? Math.min(100, Math.max(0, Math.round((1 - rate) * 100))) : 0}><span style={{ width: `${periodFunds(period) > 0 ? Math.min(100, Math.max(0, (1 - rate) * 100)) : 0}%` }} /></div>
-        <p className="mt-2 text-xs text-muted">{periodFunds(period) > 0 ? 'Lo que ya asignaste de tu ingreso' : 'Registra tu ingreso para ver tu margen'}</p>
+        {hasFunds && <div className="mt-3">
+          <div className="budget-progress" role="progressbar" aria-label="Porcentaje del dinero asignado" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.max(0, Math.round((1 - rate) * 100)))}>
+            <span style={{ width: `${Math.min(100, Math.max(0, (1 - rate) * 100))}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-muted">Margen libre · {Math.round(rate * 100)}%</p>
+        </div>}
         </div>
       </section>
 
       <SpendingPlanner key={"plan-" + period.id} period={period} />
       <DailyTools key={period.id} period={period} />
 
-      <details className="bank-summary card mt-4 px-4 py-3">
+      {hasFunds && <details className="bank-summary card mt-4 px-4 py-3">
         <summary className="cursor-pointer text-sm font-medium">
-          Saldo estimado <strong className="ml-2 tabular-nums"><MoneyAmount value={bankBalance} /></strong>
+          Saldo después de pagos registrados <strong className="ml-2 tabular-nums"><MoneyAmount value={bankBalance} /></strong>
         </summary>
         <dl className="mt-3 space-y-2 border-t border-line pt-3 text-sm">
           <div className="flex flex-wrap justify-between gap-x-2">
-            <dt>Ingreso neto</dt><dd><MoneyAmount value={period.income} /></dd>
+            <dt>Pago recibido</dt><dd><MoneyAmount value={period.income} /></dd>
           </div>
+          {Boolean(period.openingBalance) && <div className="flex flex-wrap justify-between gap-x-2"><dt>Saldo anterior</dt><dd>{formatMoney(period.openingBalance!)}</dd></div>}
           <div className="flex flex-wrap justify-between gap-x-2">
             <dt>Pagos registrados</dt><dd><MoneyAmount value={-paidRubrosTotal(period)} /></dd>
           </div>
@@ -207,7 +203,7 @@ export function QuincenaPanel() {
             <dt>Apartado a ahorros</dt><dd><MoneyAmount value={-(period.setAside || 0)} /></dd>
           </div>
         </dl>
-      </details>
+      </details>}
 
       {upcoming.length > 0 && (
         <section className="card mt-4 px-4 py-3" aria-label="Recordatorios de vencimiento">
@@ -461,7 +457,7 @@ export function QuincenaPanel() {
         })}
       </div>
 
-      {completedPeriodId && (
+      {completedPeriodId && received && (
         <p className="mt-4 text-sm text-muted" role="status">
           Pagos completos. Ya podés revisar el cierre y elegir cuánto saldo trasladar.
         </p>
@@ -474,6 +470,7 @@ export function QuincenaPanel() {
           <p className="text-sm text-muted">
             Esta quincena quedará en Historial. Los pagos pendientes pasarán a la siguiente por el monto que falta.
           </p>
+          {!received && <Paycheck key={period.id} period={period} />}
           <div className="daily-note"><div>Saldo estimado al cierre · <strong>{formatMoney(bankBalance)}</strong></div>
             <div>Pagos y abonos registrados · {formatMoney(paidRubrosTotal(period))}</div>
             <details><summary>Pendiente para la próxima quincena · {formatMoney(period.categories.reduce((sum, c) => sum + categoryPendingAmount(c), 0))}</summary>

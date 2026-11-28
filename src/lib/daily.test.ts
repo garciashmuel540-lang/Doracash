@@ -90,8 +90,8 @@ test("calendar includes overdue, partial and same-day dues; excludes paid and la
     { ...c, id: "undated" },
   ];
   const f = forecast(p, "2026-11-18");
-  assert.deepEqual(f.rows.map(r => r.id), ["over", "food", "onpay"]);
-  assert.deepEqual(f.rows.map(r => r.balance), [550, 400, 200]);
+  assert.deepEqual(f.rows.map(r => r.id), ["over", "food"]);
+  assert.deepEqual(f.rows.map(r => r.balance), [550, 400]);
   assert.equal(f.undated, 200);
   assert.equal(f.days, 13);
   assert.equal(f.daily, 0);
@@ -157,20 +157,21 @@ test("los abonos separan el agregado pendiente, conservan rubros sin abono y tra
   assert.equal(periodExpenses(current()), 1531.24);
 });
 
-test("daily spending excludes class Sundays once, respects skipped classes and excludes payday", () => {
+test("daily spending covers the whole quincena, respects skipped classes and ignores a saved payday", () => {
   const p = { ...start(), start: "2026-11-16", end: "2026-11-30", payday: "2026-11-30",
     sundays: { fare: 60, food: 40, excluded: [] as string[] } };
   let f = forecast(p, "2026-11-24");
   assert.equal(f.sundays.remaining, 1);
   assert.equal(f.available, 700);
-  assert.equal(f.daily, 116.66);
+  assert.equal(f.daily, 100);
   p.sundays.excluded = ["2026-11-29", "2026-11-29"];
   f = forecast(p, "2026-11-24");
-  assert.equal(f.daily, 133.33);
+  assert.equal(f.daily, 114.28);
   assert.equal(f.sundays.remaining, 0);
-  assert.equal(forecast({ ...p, payday: "2026-11-29" }, "2026-11-29").daily, null);
-  assert.equal(forecast({ ...p, sundays: undefined, payday: "2026-11-29" }, "2026-11-24").sundays.remaining, 0);
-  assert.equal(forecast(p, "2026-11-10").days, 14);
+  assert.equal(forecast({ ...p, payday: "2026-11-29" }, "2026-11-29").days, 2);
+  assert.equal(forecast(p, "2026-12-01").daily, null);
+  assert.equal(forecast({ ...p, sundays: undefined, payday: "2026-11-29" }, "2026-11-24").sundays.remaining, 1);
+  assert.equal(forecast(p, "2026-11-10").days, 15);
 });
 
 test("restoring expenses, transfers and partial payments preserves money, identity and notes", async () => {
@@ -216,7 +217,34 @@ test("closing carries the selected balance once, separately from income and outs
   assert.equal(next.income, 0);
   assert.equal(periodSurplus(next), 280 - currentSundayReserve(next));
   assert.deepEqual(next.sundays, { fare: 50, food: 30, excluded: [] });
-  get().setIncome(600);
+  assert.ok(get().savePaycheck(next.id, 600, today));
   assert.equal(periodSurplus(get().periods[1]), 880 - currentSundayReserve(next));
   assert.equal(estimatedBankBalance(get().periods[1]), 1000);
+});
+
+test("el pago recibido liquida los gastos de la misma quincena y las correcciones reemplazan su monto", async () => {
+  const p = start();
+  useFinance.setState({ periods: [{ ...p, income: 0, payday: "2099-12-31" }] });
+  const expense = get().recordExpense(p.id, input, false);
+  assert.ok(typeof expense === "object");
+  assert.equal(get().savePaycheck(p.id, 1000, "2099-12-31"), false);
+  assert.equal(get().savePaycheck(p.id, 1000, today), true);
+  assert.equal(current().incomeReceivedOn, today);
+  assert.equal(forecast(current(), today).dueThrough, p.end);
+  assert.equal(periodSurplus(current()), 720);
+  assert.equal(get().savePaycheck(p.id, 900, today), true);
+  await useFinance.persist.rehydrate();
+  assert.equal(periodSurplus(current()), 620);
+  assert.equal(current().movements?.length, 1);
+  assert.equal(current().incomeReceivedOn, today);
+});
+
+test("un pago anterior cuenta como recibido sin atribuirle una fecha prevista", () => {
+  const p = start();
+  useFinance.setState({ periods: [{ ...p, income: 6337.93, payday: "2026-11-30" }] });
+  assert.equal(current().incomeReceivedOn, undefined);
+  assert.equal(get().savePaycheck(p.id, 6337.93), true);
+  assert.equal(periodSurplus(current()), 6137.93);
+  assert.ok(validDailyFields(current()));
+  assert.equal(validDailyFields({ ...current(), incomeReceivedOn: "2026-02-31" }), false);
 });

@@ -45,7 +45,7 @@ type Store = {
   introDismissed: boolean;
   intent: "apartar" | null;
   setTheme: (theme: Data["theme"]) => void;
-  setIncome: (amount: number) => void;
+  savePaycheck: (periodId: string, amount: number, receivedOn?: string) => boolean;
   setItemAmount: (itemId: string, amount: number) => void;
   setItemRole: (itemId: string, role: Role) => void;
   renameItem: (itemId: string, name: string) => void;
@@ -131,8 +131,15 @@ export const useFinance = create<Store>()(
       requestApartar: () => set({ intent: "apartar" }),
       clearIntent: () => set({ intent: null }),
 
-      setIncome: (amount) =>
-        set((state) => mapOpen(state, (period) => ({ ...period, income: clampMoney(amount) }))),
+      savePaycheck: (periodId, amount, receivedOn) => {
+        const state = get();
+        const period = openPeriod(state);
+        if (period?.id !== periodId || !Number.isFinite(amount) || amount < 0 || amount > 100_000_000) return false;
+        if (receivedOn && (!validDate(receivedOn) || receivedOn > todayInManagua())) return false;
+        if (amount > 0 && !period.income && !receivedOn) return false;
+        set(mapOpen(state, current => ({ ...current, income: clampMoney(amount), incomeReceivedOn: amount > 0 ? receivedOn : undefined })));
+        return true;
+      },
       
       setItemRole: (itemId, role) =>
         set((state) =>

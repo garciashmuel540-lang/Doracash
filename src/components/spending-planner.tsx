@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Calculator, GraduationCap } from "lucide-react";
 import { Button, Modal, MoneyField } from "./ui";
-import { formatMoney, type Period } from "@/lib/finance";
+import { periodFunds, formatMoney, type Period } from "@/lib/finance";
 import { dailyAllowance, forecast, rounded, todayInManagua } from "@/lib/daily";
 import { useFinance } from "@/lib/store";
 import { feedbackToast as toast } from "@/lib/feedback-toast";
@@ -17,7 +17,7 @@ function SundayForm({ period, close }: { period: Period; close: () => void }) {
     <p>¿Cuánto necesitás para un domingo de clase en la UNAN? Incluí solo lo que aún no reservaste en otro rubro.</p>
     <div>Pasaje de ida y vuelta<MoneyField label="Pasaje de ida y vuelta" value={plan.fare} onChange={fare => setPlan({ ...plan, fare })} /></div>
     <div>Comida del domingo<MoneyField label="Comida del domingo" value={plan.food} onChange={food => setPlan({ ...plan, food })} /></div>
-    {dates.length > 0 && <fieldset><legend>Domingos por cubrir antes del cobro</legend>
+    {dates.length > 0 && <fieldset><legend>Domingos por cubrir esta quincena</legend>
       <p>Desmarcá los que ya pagaste o no vas a cursar.</p>
       {dates.map(date => <label key={date} className="sunday-date">
         <input type="checkbox" checked={!plan.excluded.includes(date)} onChange={e =>
@@ -35,19 +35,19 @@ function SundayForm({ period, close }: { period: Period; close: () => void }) {
 export function SpendingPlanner({ period }: { period: Period }) {
   const [panel, setPanel] = useState<"sundays" | "purchase" | null>(null);
   const [price, setPrice] = useState(0);
-  const { daily, days, available, sundays, payday } = forecast(period, todayInManagua());
+  const { daily, days, available, sundays } = forecast(period, todayInManagua());
+  const hasFunds = periodFunds(period) > 0;
   const after = rounded(available - price);
   const afterDaily = dailyAllowance(after, days);
   return <section className="card mt-4 p-4" aria-label="Plan de gasto diario">
-    <div className="flex flex-wrap items-start justify-between gap-2">
-      <h2 className="font-display text-xl">¿Cuánto puedo gastar hoy?</h2>
-      <strong className="text-xl tabular-nums text-gold">{daily === null ? "—" : formatMoney(daily)}</strong>
-    </div>
-    <p className="mt-1 text-sm text-muted">{daily === null ? "Revisá la fecha del próximo ingreso en Calendario." :
-      `${formatMoney(available)} libres para ${days} ${days === 1 ? "día" : "días"} hasta el cobro del ${payday.slice(8)}/${payday.slice(5, 7)}.`}</p>
+    <h2 className="font-display text-xl">Planificar mis gastos</h2>
+    {hasFunds && daily !== null && <details className="mt-2 text-sm">
+      <summary className="cursor-pointer py-2">¿Cuánto puedo gastar por día?</summary>
+      <p className="text-muted">Si repartís el saldo libre entre los {days} {days === 1 ? "día que queda" : "días que quedan"} de esta quincena, son <strong>{formatMoney(daily)} por día</strong>.</p>
+    </details>}
     {sundays.reserve > 0 && <p className="mt-1 text-xs text-muted">{formatMoney(sundays.reserve)} reservados para domingos de clase.</p>}
     <div className="daily-actions mt-3">
-      <Button variant="quiet" aria-haspopup="dialog" onClick={() => { setPrice(0); setPanel("purchase"); }}><Calculator className="size-4" /> ¿Me alcanza?</Button>
+      <Button variant="quiet" disabled={!hasFunds} aria-haspopup="dialog" onClick={() => { setPrice(0); setPanel("purchase"); }}><Calculator className="size-4" /> ¿Me alcanza?</Button>
       <Button variant="quiet" aria-haspopup="dialog" onClick={() => setPanel("sundays")}><GraduationCap className="size-4" /> Domingos UNAN</Button>
     </div>
     <Modal open={panel !== null} onOpenChange={open => { if (!open) setPanel(null); }} title={panel === "sundays" ? "Domingos UNAN" : "¿Me alcanza?"}>
@@ -56,7 +56,7 @@ export function SpendingPlanner({ period }: { period: Period }) {
         <div>Precio de la compra<MoneyField label="Precio de la compra" value={price} onChange={setPrice} /></div>
         <div className="daily-note" role="status">{price <= 0 ? `Disponible para compras: ${formatMoney(available)}.` : after < 0 ?
           <strong>Te faltarían {formatMoney(-after)}.</strong> : <><strong>Te alcanza. Te quedarían {formatMoney(after)}.</strong>
-          {afterDaily !== null && <p>Podrías gastar {formatMoney(afterDaily)} por día hasta el cobro.</p>}</>}</div>
+          {afterDaily !== null && <p>Podrías gastar {formatMoney(afterDaily)} por día durante el resto de esta quincena.</p>}</>}</div>
       </div>}
     </Modal>
   </section>;

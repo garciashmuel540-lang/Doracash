@@ -47,7 +47,7 @@ function HistorialPage() {
                 </div>
 
                 <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-4 text-sm mt-4 border-t border-line pt-4">
-                  <div><dt className="text-muted text-xs">Ingreso</dt><dd className="font-medium"><MoneyAmount value={period.income || 0} /></dd></div>
+                  <div><dt className="text-muted text-xs">Pago recibido</dt><dd className="font-medium"><MoneyAmount value={period.income || 0} /></dd></div>
                   {Boolean(period.openingBalance) && <div><dt className="text-muted text-xs">Recibido del cierre anterior</dt><dd><MoneyAmount value={period.openingBalance!} /></dd></div>}
                   {period.carriedOut !== undefined && <div><dt className="text-muted text-xs">Saldo trasladado</dt><dd><MoneyAmount value={period.carriedOut} /></dd></div>}
                   <div><dt className="text-muted text-xs">Gastos</dt><dd className="font-medium"><MoneyAmount value={expenses} outflow /></dd></div>
@@ -67,7 +67,7 @@ function HistorialPage() {
                   </summary>
                   <p className="text-xs text-muted mt-1">Conceptos registrados al cerrar la quincena.</p>
                   <div className="flex flex-wrap justify-between items-start gap-2 py-4 text-sm">
-                    <span>Ingreso de la quincena</span>
+                    <span>Pago de esta quincena{period.incomeReceivedOn && ` · ${period.incomeReceivedOn.split("-").reverse().join("/")}`}</span>
                     <span className="font-medium whitespace-nowrap"><MoneyAmount value={period.income || 0} /></span>
                   </div>
 

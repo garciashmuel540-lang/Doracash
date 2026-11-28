@@ -142,18 +142,18 @@ function Reconcile({ period }: { period: Period }) {
 
 function Calendar({ period }: { period: Period }) {
   const today = todayInManagua();
-  const { payday, rows, undated, days, daily } = forecast(period, today);
+  const { dueThrough, rows, undated } = forecast(period, today);
   const setPayday = useFinance(s => s.setPayday);
   return <div className="daily-form">
-    <label>Fecha del próximo ingreso<input type="date" value={payday} onChange={e => { if (e.target.value) setPayday(period.id, e.target.value); }} /></label>
-    {!period.payday && <p>Fecha estimada según el inicio de la próxima quincena. Podés cambiarla.</p>}
-    <div className="daily-note">{daily !== null ? <><strong>{formatMoney(daily)} por día</strong><p>Disponible después de reservar los rubros, ahorros y domingos de clase, repartido entre {days} días.</p></> : <strong>{payday === today ? "Tu ingreso está previsto para hoy." : "Actualizá la fecha de tu próximo ingreso."}</strong>}</div>
-    <h3>Vencimientos hasta el {shortDate(payday)}</h3>
+    {period.income <= 0 && <details><summary>Fecha prevista de pago</summary>
+      <label>Revisar vencimientos hasta<input type="date" value={dueThrough} onChange={e => { if (e.target.value) setPayday(period.id, e.target.value); }} /></label>
+    </details>}
+    <h3>Vencimientos hasta el {shortDate(dueThrough)}</h3>
     {rows.length === 0 && <p>Sin pagos pendientes con fecha hasta ese día.</p>}
     {rows.map(row => <div className="daily-row" key={row.id}><div><strong>{row.name}</strong><small>{shortDate(row.date)} · {row.date < today ? "Vencido" : row.date === today ? "Hoy" : "Pendiente"}</small></div>
       <div className="text-right"><strong>{formatMoney(row.amount)}</strong><small className={row.balance < 0 ? "text-bad" : ""}>Al pagar: {formatMoney(row.balance)}</small></div></div>)}
     {undated > 0 && <p>Además tenés {formatMoney(undated)} pendientes sin fecha.</p>}
-    <p>La proyección usa el saldo estimado de la quincena antes de recibir tu próximo ingreso.</p>
+    <p>El saldo proyectado toma en cuenta el dinero registrado y los pagos pendientes con fecha.</p>
   </div>;
 }
 
@@ -196,7 +196,7 @@ export function DailyTools({ period }: { period: Period }) {
           else toast.info("Revisá los abonos de este rubro. Restaurá primero el abono anterior y comprobá el monto del rubro.");
         }}>Restaurar</Button></div>)}
     </details>}
-    <Modal open={tool !== null} onOpenChange={open => { if (!open) setTool(null); }} title={tool === "expense" ? "Gasto rápido" : tool === "check" ? "Conciliar saldos" : "Calendario hasta el cobro"}>
+    <Modal open={tool !== null} onOpenChange={open => { if (!open) setTool(null); }} title={tool === "expense" ? "Gasto rápido" : tool === "check" ? "Conciliar saldos" : "Calendario de la quincena"}>
       {tool === "expense" ? <QuickExpense period={period} close={() => setTool(null)} /> : tool === "check" ? <Reconcile period={period} /> : tool === "calendar" ? <Calendar period={period} /> : null}
     </Modal>
   </section>;
