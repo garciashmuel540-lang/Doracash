@@ -29,9 +29,11 @@ export function Paycheck({ period }: { period: Period }) {
   const [open, setOpen] = useState(false);
   const received = period.income > 0;
   return <div className="paycheck-summary">
-    <p className="balance-income-label">{received ? "Pago recibido de esta quincena" : "Pago de esta quincena"}</p>
-    {received && <p className="mt-1 font-display text-2xl tabular-nums">{formatMoney(period.income)}</p>}
-    {received && period.incomeReceivedOn && <p className="text-xs text-muted">Recibido el <time dateTime={period.incomeReceivedOn}>{period.incomeReceivedOn.split("-").reverse().join("/")}</time></p>}
+    <div className="paycheck-copy">
+      <p className="balance-income-label">{received ? "Pago recibido de esta quincena" : "Pago de esta quincena"}</p>
+      {received && <p className="mt-1 font-display text-2xl tabular-nums">{formatMoney(period.income)}</p>}
+      {received && period.incomeReceivedOn && <p className="text-xs text-muted">Recibido el <time dateTime={period.incomeReceivedOn}>{period.incomeReceivedOn.split("-").reverse().join("/")}</time></p>}
+    </div>
     <Button className="mt-2" variant={received ? "quiet" : "primary"} aria-haspopup="dialog" onClick={() => setOpen(true)}>
       {received ? "Editar pago recibido" : "Registrar mi pago"}
     </Button>

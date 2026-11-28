@@ -128,6 +128,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       
       <Toaster
         position="top-center"
+        style={{ fontFamily: "var(--font-sans)" }}
         theme={theme}
         toastOptions={{
           actionButtonStyle: {

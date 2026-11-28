@@ -30,12 +30,6 @@ export const Route = createRootRoute({
     <html lang="es" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
       <body>
