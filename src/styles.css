@@ -836,3 +836,6 @@ h1, h2, h3, .font-display { font-family: var(--font-sans); }
   transform: translateX(18px);
   background: var(--clay-knob);
 }
+
+.daily-form .sunday-date { display: flex; flex-direction: row; align-items: center; gap: .75rem; min-height: 44px; }
+.daily-form .sunday-date input { width: 1.1rem; height: 1.1rem; min-height: 0; accent-color: var(--color-gold); }

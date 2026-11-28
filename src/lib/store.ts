@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import {
   clampMoney,
   categoryTotal,
+  estimatedBankBalance,
   categoryPaidAmount,
   categoryPendingAmount,
   categoriesForNextPeriod,
@@ -31,6 +32,8 @@ type Undo = () => boolean;
 type ExpenseInput = { name: string; amount: number; date: string; location: MoneyLocation; categoryId?: string };
 type Store = {
   recordExpense: (periodId: string, entry: ExpenseInput, allowDuplicate: boolean) => "duplicate" | "invalid" | Movement;
+  setSundayPlan: (periodId: string, plan: NonNullable<Period["sundays"]>) => void;
+  restoreMovement: (periodId: string, id: string) => boolean;
   undoMovement: (periodId: string, id: string) => boolean;
   recordTransfer: (periodId: string, from: MoneyLocation, amount: number) => Movement | null;
   checkBalances: (periodId: string, counted: Balances, edit?: "first" | "last") => boolean;
@@ -64,7 +67,7 @@ type Store = {
   transferToSavings: (name: string, amount: number) => Undo | null;
   recoverUnlinkedSavings: (amount: number) => boolean;
   closePeriod: () => void;
-  openNext: (copyRecurring?: boolean, archiveOpen?: boolean, completedPeriodId?: string) => void;
+  openNext: (copyRecurring?: boolean, archiveOpen?: boolean, completedPeriodId?: string, carry?: number) => void;
   dismissIntro: () => void;
   requestApartar: () => void;
   clearIntent: () => void;
@@ -314,6 +317,36 @@ export const useFinance = create<Store>()(
         return true;
       },
 
+      setSundayPlan: (periodId, plan) => set(state => {
+        if (openPeriod(state)?.id !== periodId) return state;
+        return mapOpen(state, p => ({ ...p, sundays: { fare: clampMoney(plan.fare), food: clampMoney(plan.food),
+          excluded: [...new Set(plan.excluded.filter(validDate))] } }));
+      }),
+
+      restoreMovement: (periodId, id) => {
+        const state = get();
+        const p = openPeriod(state);
+        const entry = p?.trash?.find(t => t.movement.id === id);
+        if (!p || p.id !== periodId || !entry) return false;
+        const m = entry.movement;
+        const movements = p.movements ?? [];
+        if (movements.some(other => other.id === id)) return false;
+        let categories = p.categories;
+        const category = categories.find(c => c.id === m.categoryId);
+        if (m.kind === "expense") {
+          if (category || !entry.expenseCategory) return false;
+          categories = [...categories, entry.expenseCategory];
+        } else if (m.kind === "payment") {
+          const last = movements.filter(other => other.categoryId === m.categoryId).at(-1);
+          if (!category || last?.id !== entry.previousPaymentId || categoryPaidAmount(category) !== m.before ||
+              m.after === undefined || m.after < 0 || m.after > categoryTotal(category)) return false;
+          categories = categories.map(c => c !== category ? c : { ...c, paidAmount: m.after, paid: m.after === categoryTotal(c) });
+        }
+        set(mapOpen(state, period => ({ ...period, categories, movements: [...movements, m],
+          trash: period.trash?.filter(t => t.movement.id !== id) })));
+        return true;
+      },
+
       undoMovement: (periodId, id) => {
         const state = get();
         const period = openPeriod(state);
@@ -334,7 +367,12 @@ export const useFinance = create<Store>()(
             categories = categories.map(c => c !== category ? c : { ...c, paidAmount: previous, paid: previous > 0 && previous === categoryTotal(c) });
           }
         }
-        set(mapOpen(state, p => ({ ...p, categories, movements: movements.filter(entry => entry.id !== id) })));
+        const category = period.categories.find(c => c.id === m.categoryId);
+        const entry = { movement: m, expenseCategory: m.kind === "expense" ? category : undefined,
+          previousPaymentId: movements.slice(0, index).filter(other => other.categoryId === m.categoryId).at(-1)?.id,
+          note: category?.note };
+        set(mapOpen(state, p => ({ ...p, categories, movements: movements.filter(other => other.id !== id),
+          trash: [...(p.trash ?? []), entry] })));
         return true;
       },
 
@@ -461,15 +499,16 @@ export const useFinance = create<Store>()(
 
       closePeriod: () => set((state) => ({ periods: state.periods.map((p) => (p.status === "open" ? { ...p, status: "closed" } : p)) })),
 
-      openNext: (copyRecurring = true, archiveOpen = false, completedPeriodId) => {
+      openNext: (copyRecurring = true, archiveOpen = false, completedPeriodId, carry = 0) => {
         set((state) => {
           const active = openPeriod(state);
           if (active && !archiveOpen) return state;
           if (completedPeriodId && (!active || active.id !== completedPeriodId || !allPaymentsComplete(active))) return state;
+          if (!Number.isFinite(carry) || carry < 0 || carry > (active ? Math.max(0, estimatedBankBalance(active)) : 0)) return state;
           const current = currentQuincena();
           const lastClosed = active ?? previousClosed(state.periods);
           const periods = state.periods.map((period) => period.id === active?.id
-            ? { ...period, status: "closed" as const, closedAt: new Date().toISOString() }
+            ? { ...period, status: "closed" as const, carriedOut: carry, closedAt: new Date().toISOString() }
             : period);
           const range = lastClosed && current.start <= lastClosed.end ? nextQuincena(lastClosed.end) : current;
           const defaultCategories: Category[] = lastClosed
@@ -489,6 +528,8 @@ export const useFinance = create<Store>()(
                 start: range.start,
                 end: range.end,
                 income: 0,
+                openingBalance: carry,
+                sundays: lastClosed?.sundays ? { ...lastClosed.sundays, excluded: [] } : undefined,
                 categories: defaultCategories,
                 status: 'open',
                 setAside: 0,

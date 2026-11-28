@@ -1,6 +1,6 @@
 import {
   categoryDueDate, categoryPaidAmount, categoryPendingAmount, estimatedBankBalance,
-  managuaParts, nextQuincena, parseMoney, periodSurplus,
+  sundayBudget, nextQuincena, periodFunds, parseMoney, periodSurplus,
   type MoneyLocation, type Period,
 } from "./finance.ts";
 
@@ -29,10 +29,7 @@ export function hasComparison(record: Reconciliation) {
 }
 export const rounded = (n: number) => Math.round(n * 1000) / 1000;
 
-export function todayInManagua() {
-  const { year, month, day } = managuaParts();
-  return [year, month, day].map(n => String(n).padStart(2, "0")).join("-");
-}
+export { todayInManagua } from "./finance.ts";
 
 export function validDate(s: unknown): s is string {
   if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
@@ -72,7 +69,7 @@ export function duplicateIds(entries: Movement[]) {
 }
 
 export function balanceFlow(period: Period): Balances {
-  const flow = { account: period.income - (period.setAside || 0), cash: 0 };
+  const flow = { account: periodFunds(period) - (period.setAside || 0), cash: 0 };
   const byCategory = new Map<string, Movement[]>();
   for (const m of period.movements ?? []) {
     if (m.kind === "transfer") {
@@ -126,6 +123,12 @@ export function expectedBalances(first: BalanceCheck, flow: Balances): Balances 
   };
 }
 
+const DAY = 86400000;
+
+export function dailyAllowance(available: number, days: number) {
+  return days > 0 ? Math.floor(Math.max(0, rounded(available)) * 100 / days + 1e-9) / 100 : null;
+}
+
 export function forecast(period: Period, today: string) {
   const payday = period.payday ?? nextQuincena(period.end).start;
   const due = period.categories.flatMap(category => {
@@ -135,11 +138,14 @@ export function forecast(period: Period, today: string) {
   }).sort((a, b) => a.date.localeCompare(b.date));
   const undated = rounded(period.categories.reduce((sum, c) =>
     sum + (!c.dueDay && !c.carriedDueDate ? categoryPendingAmount(c) : 0), 0));
-  const days = Math.max(0, (Date.parse(payday) - Date.parse(today)) / 86400000);
+  const start = today < period.start.slice(0, 10) ? period.start.slice(0, 10) : today;
+  const days = Math.max(0, (Date.parse(payday) - Date.parse(start)) / DAY);
+  const sundays = sundayBudget(period, start, payday);
+  const available = periodSurplus(period, sundays.reserve);
   let balance = estimatedBankBalance(period);
   const rows = due.map(entry => ({ ...entry, balance: balance = rounded(balance - entry.amount) }));
-  const daily = days > 0 ? Math.floor(Math.max(0, periodSurplus(period)) * 100 / days) / 100 : null;
-  return { payday, days, daily, rows, undated };
+  const daily = dailyAllowance(available, days);
+  return { payday, days, daily, rows, undated, sundays, available };
 }
 
 function balances(value: unknown, signed: boolean): boolean {
@@ -154,10 +160,21 @@ export function validDailyFields(p: Period) {
   if (earlier !== undefined && !Array.isArray(earlier)) return false;
   if (p.reconciliation !== undefined && ![p.reconciliation?.first, p.reconciliation?.last, ...(earlier ?? [])].every(
     c => c && validDate(c.date) && balances(c.counted, false) && balances(c.flow, true))) return false;
-  if (p.movements === undefined) return true;
-  return Array.isArray(p.movements) && p.movements.every(m => m && typeof m.id === "string" &&
+  const nonnegative = (value: number) => Number.isFinite(value) && value >= 0;
+  if ([p.openingBalance, p.carriedOut].some(value => value !== undefined && !nonnegative(value))) return false;
+  if (p.sundays !== undefined && (!p.sundays || !nonnegative(p.sundays.fare) || !nonnegative(p.sundays.food) ||
+      !Array.isArray(p.sundays.excluded) || !p.sundays.excluded.every(validDate))) return false;
+  if (p.trash !== undefined && (!Array.isArray(p.trash) || !p.trash.every(entry => entry && validMovement(entry.movement) &&
+      (entry.note === undefined || typeof entry.note === "string") &&
+      (entry.movement.kind !== "expense" || (entry.expenseCategory?.id === entry.movement.categoryId &&
+        Array.isArray(entry.expenseCategory?.items) && entry.expenseCategory.items.every(i => i && typeof i.name === "string" && nonnegative(i.amount))))))) return false;
+  return p.movements === undefined || (Array.isArray(p.movements) && p.movements.every(validMovement));
+}
+
+function validMovement(m: Movement) {
+  return m && typeof m.id === "string" &&
     typeof m.name === "string" && validDate(m.date) && ["account", "cash"].includes(m.location) &&
     Number.isFinite(m.amount) && (m.kind === "transfer" ? m.amount > 0 :
       typeof m.categoryId === "string" && (m.kind === "expense" ? m.amount > 0 :
-        m.kind === "payment" && Number.isFinite(m.before) && Number.isFinite(m.after))));
+        m.kind === "payment" && Number.isFinite(m.before) && Number.isFinite(m.after)));
 }

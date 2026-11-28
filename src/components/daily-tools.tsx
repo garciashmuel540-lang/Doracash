@@ -12,7 +12,7 @@ const shortDate = (date: string) => date.slice(8, 10) + "/" + date.slice(5, 7);
 type Tool = "expense" | "check" | "calendar" | null;
 
 function undo(periodId: string, id: string) {
-  if (useFinance.getState().undoMovement(periodId, id)) toast.undo("Movimiento deshecho");
+  if (useFinance.getState().undoMovement(periodId, id)) toast.undo("Movimiento enviado a la papelera");
   else toast.info("El rubro cambió o la quincena cerró. Revisá su movimiento más reciente.");
 }
 
@@ -147,7 +147,7 @@ function Calendar({ period }: { period: Period }) {
   return <div className="daily-form">
     <label>Fecha del próximo ingreso<input type="date" value={payday} onChange={e => { if (e.target.value) setPayday(period.id, e.target.value); }} /></label>
     {!period.payday && <p>Fecha estimada según el inicio de la próxima quincena. Podés cambiarla.</p>}
-    <div className="daily-note">{daily !== null ? <><strong>{formatMoney(daily)} por día</strong><p>Disponible después de reservar los rubros y ahorros, repartido entre {days} días.</p></> : <strong>{payday === today ? "Tu ingreso está previsto para hoy." : "Actualizá la fecha de tu próximo ingreso."}</strong>}</div>
+    <div className="daily-note">{daily !== null ? <><strong>{formatMoney(daily)} por día</strong><p>Disponible después de reservar los rubros, ahorros y domingos de clase, repartido entre {days} días.</p></> : <strong>{payday === today ? "Tu ingreso está previsto para hoy." : "Actualizá la fecha de tu próximo ingreso."}</strong>}</div>
     <h3>Vencimientos hasta el {shortDate(payday)}</h3>
     {rows.length === 0 && <p>Sin pagos pendientes con fecha hasta ese día.</p>}
     {rows.map(row => <div className="daily-row" key={row.id}><div><strong>{row.name}</strong><small>{shortDate(row.date)} · {row.date < today ? "Vencido" : row.date === today ? "Hoy" : "Pendiente"}</small></div>
@@ -161,11 +161,15 @@ export function DailyTools({ period }: { period: Period }) {
   const [tool, setTool] = useState<Tool>(null);
   const [showAll, setShowAll] = useState(false);
   const [onlyMatches, setOnlyMatches] = useState(false);
+  const [query, setQuery] = useState("");
+  const restore = useFinance(s => s.restoreMovement);
   const entries = period.movements;
   const future = period.start.slice(0, 10) > todayInManagua();
   const recent = useMemo(() => [...(entries ?? [])].reverse(), [entries]);
   const matches = useMemo(() => duplicateIds(entries ?? []), [entries]);
-  const filtered = onlyMatches && matches.size ? recent.filter(m => matches.has(m.id)) : recent;
+  const search = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const filtered = recent.filter(m => (!onlyMatches || !matches.size || matches.has(m.id)) &&
+    search([m.name, m.date, shortDate(m.date), place[m.location], m.amount].join(" ")).includes(search(query.trim())));
   return <section className="daily-tools card" aria-label="Operaciones de la quincena">
     <div className="daily-actions">
       <Button disabled={future} title={future ? "Disponible al comenzar esta quincena" : undefined} aria-haspopup="dialog" onClick={() => setTool("expense")}><Plus className="size-4" /> Gasto rápido</Button>
@@ -173,6 +177,8 @@ export function DailyTools({ period }: { period: Period }) {
       <Button variant="quiet" aria-haspopup="dialog" onClick={() => setTool("calendar")}><CalendarDays className="size-4" /> Calendario</Button>
     </div>
     {recent.length > 0 && <details className="mt-3"><summary>Movimientos de la quincena ({recent.length})</summary>
+      <label className="daily-form mb-2">Buscar movimiento<input type="search" value={query} placeholder="Concepto, fecha o monto" onChange={e => setQuery(e.target.value)} /></label>
+      {!filtered.length && <p className="text-sm text-muted">Ningún movimiento coincide.</p>}
       {matches.size > 0 && <Button variant="quiet" className="mb-2" aria-pressed={onlyMatches} onClick={() => setOnlyMatches(!onlyMatches)}>{onlyMatches ? "Mostrar todos los movimientos" : "Revisar posibles repetidos (" + matches.size + ")"}</Button>}
       {(showAll ? filtered : filtered.slice(0, 5)).map(m => <div className="daily-row" key={m.id}>
         <div><strong>{m.name}</strong><small>{shortDate(m.date)} · {place[m.location]}{m.kind === "transfer" ? " → " + place[m.location === "cash" ? "account" : "cash"] : ""}{matches.has(m.id) && " · Posible repetido"}</small></div>
@@ -180,6 +186,15 @@ export function DailyTools({ period }: { period: Period }) {
         <button type="button" className="daily-undo" aria-label={"Deshacer " + m.name} onClick={() => undo(period.id, m.id)}><Undo2 className="size-4" /></button>
       </div>)}
       {filtered.length > 5 && <Button variant="ghost" onClick={() => setShowAll(!showAll)}>{showAll ? "Ver menos" : "Ver todos"}</Button>}
+    </details>}
+    {Boolean(period.trash?.length) && <details className="mt-2"><summary>Papelera de movimientos ({period.trash!.length})</summary>
+      {[...period.trash!].reverse().map(({ movement: m, note }) => <div className="daily-row flex-wrap" key={m.id}>
+        <div><strong>{m.name}</strong><small>{shortDate(m.date)} · {formatMoney(m.amount)} · {place[m.location]}</small>
+        {note && <small>{note}</small>}</div>
+        <Button variant="quiet" onClick={() => {
+          if (restore(period.id, m.id)) toast.success("Movimiento restaurado");
+          else toast.info("Revisá los abonos de este rubro. Restaurá primero el abono anterior y comprobá el monto del rubro.");
+        }}>Restaurar</Button></div>)}
     </details>}
     <Modal open={tool !== null} onOpenChange={open => { if (!open) setTool(null); }} title={tool === "expense" ? "Gasto rápido" : tool === "check" ? "Conciliar saldos" : "Calendario hasta el cobro"}>
       {tool === "expense" ? <QuickExpense period={period} close={() => setTool(null)} /> : tool === "check" ? <Reconcile period={period} /> : tool === "calendar" ? <Calendar period={period} /> : null}

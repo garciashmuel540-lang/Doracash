@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { allPaymentsComplete, categoryPendingAmount, deferredPaymentsTotal, pendingMoneyLocations, periodExpenses, roleAmount, categoriesForNextPeriod, estimatedBankBalance, periodSurplus, type Period } from "./finance.ts";
+import { currentSundayReserve, allPaymentsComplete, categoryPendingAmount, deferredPaymentsTotal, pendingMoneyLocations, periodExpenses, roleAmount, categoriesForNextPeriod, estimatedBankBalance, periodSurplus, type Period } from "./finance.ts";
 import { balanceFlow, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, todayInManagua, validDailyFields } from "./daily.ts";
 const records = new Map<string, string>();
 Object.defineProperty(globalThis, "window", { configurable: true, value: {
@@ -155,4 +155,68 @@ test("los abonos separan el agregado pendiente, conservan rubros sin abono y tra
   get().setCategoryPayment("tc", 0);
   assert.equal(deferredPaymentsTotal(current()), 100);
   assert.equal(periodExpenses(current()), 1531.24);
+});
+
+test("daily spending excludes class Sundays once, respects skipped classes and excludes payday", () => {
+  const p = { ...start(), start: "2026-11-16", end: "2026-11-30", payday: "2026-11-30",
+    sundays: { fare: 60, food: 40, excluded: [] as string[] } };
+  let f = forecast(p, "2026-11-24");
+  assert.equal(f.sundays.remaining, 1);
+  assert.equal(f.available, 700);
+  assert.equal(f.daily, 116.66);
+  p.sundays.excluded = ["2026-11-29", "2026-11-29"];
+  f = forecast(p, "2026-11-24");
+  assert.equal(f.daily, 133.33);
+  assert.equal(f.sundays.remaining, 0);
+  assert.equal(forecast({ ...p, payday: "2026-11-29" }, "2026-11-29").daily, null);
+  assert.equal(forecast({ ...p, sundays: undefined, payday: "2026-11-29" }, "2026-11-24").sundays.remaining, 0);
+  assert.equal(forecast(p, "2026-11-10").days, 14);
+});
+
+test("restoring expenses, transfers and partial payments preserves money, identity and notes", async () => {
+  start();
+  const m = get().recordExpense("test", input, false);
+  assert.ok(typeof m === "object");
+  get().setCategoryNote(m.categoryId!, "Retirar en el banco");
+  const balance = balanceFlow(current());
+  assert.ok(get().undoMovement("test", m.id));
+  assert.ok(validDailyFields(current()));
+  await useFinance.persist.rehydrate();
+  assert.ok(get().restoreMovement("test", m.id));
+  assert.equal(current().categories.at(-1)?.note, "Retirar en el banco");
+  assert.deepEqual(current().movements?.at(-1), m);
+  assert.deepEqual(balanceFlow(current()), balance);
+  assert.ok(!get().restoreMovement("test", m.id));
+  const transfer = get().recordTransfer("test", "account", 100)!;
+  const transferred = balanceFlow(current());
+  assert.ok(get().undoMovement("test", transfer.id));
+  assert.ok(get().restoreMovement("test", transfer.id));
+  assert.deepEqual(balanceFlow(current()), transferred);
+  get().setCategoryPayment("food", 50);
+  get().setCategoryPayment("food", 100);
+  const [first, second] = current().movements!.slice(-2);
+  assert.ok(get().undoMovement("test", second.id));
+  assert.ok(get().undoMovement("test", first.id));
+  assert.equal(get().restoreMovement("test", second.id), false);
+  assert.ok(get().restoreMovement("test", first.id));
+  assert.ok(get().restoreMovement("test", second.id));
+  assert.equal(categoryPendingAmount(current().categories[0]), 100);
+});
+
+test("closing carries the selected balance once, separately from income and outstanding bills", () => {
+  start();
+  get().setSundayPlan("test", { fare: 50, food: 30, excluded: [today] });
+  get().setCategoryPayment("food", 80);
+  get().openNext(false, true, undefined, 921);
+  assert.equal(get().periods.length, 1);
+  get().openNext(false, true, undefined, 400);
+  const [closed, next] = get().periods;
+  assert.equal(closed.carriedOut, 400);
+  assert.equal(next.openingBalance, 400);
+  assert.equal(next.income, 0);
+  assert.equal(periodSurplus(next), 280 - currentSundayReserve(next));
+  assert.deepEqual(next.sundays, { fare: 50, food: 30, excluded: [] });
+  get().setIncome(600);
+  assert.equal(periodSurplus(get().periods[1]), 880 - currentSundayReserve(next));
+  assert.equal(estimatedBankBalance(get().periods[1]), 1000);
 });

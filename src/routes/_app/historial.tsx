@@ -27,11 +27,14 @@ function HistorialPage() {
         </div>
       ) : (
         <div className="mt-6 flex flex-col gap-4">
-          {closedPeriods.map((savedPeriod) => {
+          {closedPeriods.map((savedPeriod, index) => {
             const period = { ...savedPeriod, categories: savedPeriod.categories ?? [] };
             const categories = period.categories.filter((category) => categoryTotal(category) > 0 || category.note?.trim());
             const expenses = periodExpenses(period);
             const surplus = periodSurplus(period);
+            const previous = closedPeriods[index + 1];
+            const previousExpenses = previous ? periodExpenses({ ...previous, categories: previous.categories ?? [] }) : 0;
+            const change = Math.round((expenses - previousExpenses) * 1000) / 1000;
 
             return (
               <article key={period.id} className="card min-w-0 p-5">
@@ -45,12 +48,18 @@ function HistorialPage() {
 
                 <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-4 text-sm mt-4 border-t border-line pt-4">
                   <div><dt className="text-muted text-xs">Ingreso</dt><dd className="font-medium"><MoneyAmount value={period.income || 0} /></dd></div>
+                  {Boolean(period.openingBalance) && <div><dt className="text-muted text-xs">Recibido del cierre anterior</dt><dd><MoneyAmount value={period.openingBalance!} /></dd></div>}
+                  {period.carriedOut !== undefined && <div><dt className="text-muted text-xs">Saldo trasladado</dt><dd><MoneyAmount value={period.carriedOut} /></dd></div>}
                   <div><dt className="text-muted text-xs">Gastos</dt><dd className="font-medium"><MoneyAmount value={expenses} outflow /></dd></div>
                   <div><dt className="text-muted text-xs">Día a día</dt><dd className="font-medium"><MoneyAmount value={roleAmount(period, "life")} outflow /></dd></div>
                   <div><dt className="text-muted text-xs">Apartado para ahorro</dt><dd className="font-medium"><MoneyAmount value={period.setAside || 0} /></dd></div>
                   <div><dt className="text-muted text-xs">Libre</dt><dd className="font-medium"><MoneyAmount value={surplus} /></dd></div>
                 </dl>
 
+                {previous && <p className="daily-note mt-3 text-sm">
+                  {change === 0 ? "Presupuestaste lo mismo en gastos" : `Presupuestaste ${formatMoney(Math.abs(change))} ${change > 0 ? "más" : "menos"} en gastos`}
+                  {" que en la quincena del "}{formatRange(previous.start, previous.end)}.
+                </p>}
                 <details className="group mt-4 border-t border-line" aria-label="Resumen de movimientos">
                   <summary className="min-h-11 cursor-pointer rounded-lg py-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
                     <span className="group-open:hidden">Ver movimientos</span>

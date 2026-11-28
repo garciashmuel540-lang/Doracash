@@ -46,6 +46,10 @@ export type Period = {
   movements?: Movement[];
   reconciliation?: Reconciliation;
   payday?: string;
+  openingBalance?: number;
+  carriedOut?: number;
+  sundays?: { fare: number; food: number; excluded: string[] };
+  trash?: { movement: Movement; expenseCategory?: Category; previousPaymentId?: string; note?: string }[];
 };
 
 export type Goal = {
@@ -306,8 +310,12 @@ export function paidRubrosTotal(period: Pick<Period, "categories">) {
   return roundMoney(period.categories.reduce((total, category) => total + categoryPaidAmount(category), 0));
 }
 
+export function periodFunds(period: Period) {
+  return roundMoney(Number(period.income) + (period.openingBalance ?? 0));
+}
+
 export function estimatedBankBalance(period: Period) {
-  return roundMoney(period.income - paidRubrosTotal(period) - (period.setAside || 0));
+  return roundMoney(periodFunds(period) - paidRubrosTotal(period) - (period.setAside || 0));
 }
 
 export function categoryDueDate(periodStart: string, dueDay?: number) {
@@ -330,13 +338,37 @@ export function unlinkedSavings(period: Period) {
   return clampMoney((period.setAside || 0) - linked);
 }
 
-export function periodSurplus(period: Period) {
-  return roundMoney(period.income - periodExpenses(period) - roleAmount(period, 'life') - (period.setAside || 0));
+export function todayInManagua() {
+  const { year, month, day } = managuaParts();
+  return [year, month, day].map(n => String(n).padStart(2, "0")).join("-");
+}
+
+export function sundayBudget(period: Period, start: string, payday: string) {
+  const dayMs = 86400000;
+  const first = new Date(start);
+  const offset = (7 - first.getUTCDay()) % 7;
+  const firstSunday = first.getTime() + offset * dayMs;
+  const count = Math.max(0, Math.ceil((Date.parse(payday) - firstSunday) / (7 * dayMs)));
+  const excluded = new Set(period.sundays?.excluded ?? []);
+  const skipped = [...excluded].filter(d => d >= start && d < payday && new Date(d).getUTCDay() === 0).length;
+  const remaining = Math.max(0, count - skipped);
+  const perSunday = (period.sundays?.fare ?? 0) + (period.sundays?.food ?? 0);
+  return { remaining, reserve: roundMoney(remaining * perSunday), firstSunday, count };
+}
+
+export function currentSundayReserve(period: Period) {
+  if (!period.sundays || period.status === "closed") return 0;
+  const start = [period.start.slice(0, 10), todayInManagua()].sort()[1];
+  return sundayBudget(period, start, period.payday ?? nextQuincena(period.end).start).reserve;
+}
+
+export function periodSurplus(period: Period, reserve = currentSundayReserve(period)) {
+  return roundMoney(periodFunds(period) - periodExpenses(period) - roleAmount(period, 'life') - (period.setAside || 0) - reserve);
 }
 
 export function savingsRate(period: Period) {
-  if (period.income <= 0) return 0;
-  return periodSurplus(period) / period.income;
+  if (periodFunds(period) <= 0) return 0;
+  return periodSurplus(period) / periodFunds(period);
 }
 
 export function rateTone(rate: number): "good" | "bad" | "neutral" {
@@ -448,7 +480,7 @@ export function biggestCategory(period: Period) {
 }
 
 export function buildInsights(period: Period, periods: Period[], goals: Goal[]): Insight[] {
-  const income = period.income;
+  const income = periodFunds(period);
   const expenses = periodExpenses(period);
   const surplus = periodSurplus(period);
   const rate = income > 0 ? surplus / income : 0;

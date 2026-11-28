@@ -1,4 +1,4 @@
-import { budgetItems, splitPayment, categoryPaidAmount, roleAmount, deferredPaymentsTotal, type Role, type Goal, type Period } from './finance.ts';
+import { currentSundayReserve, budgetItems, splitPayment, categoryPaidAmount, roleAmount, deferredPaymentsTotal, type Role, type Goal, type Period } from './finance.ts';
 
 export function advisorContext(period: Period | undefined, goals: Goal[], tarjeta: string | null = null) {
   const money = (n: number | undefined) => Number.isFinite(n) ? Math.max(0, n!) : 0;
@@ -22,12 +22,14 @@ export function advisorContext(period: Period | undefined, goals: Goal[], tarjet
   const gastos = sum('need');
   const compromisos = sum('debt');
   const ahorroAsignado = sum('life') + money(period?.setAside);
-  const libre = ingreso - gastos - compromisos - ahorroAsignado;
+  const saldoAnterior = money(period?.openingBalance);
+  const reservaDominical = period ? currentSundayReserve(period) : 0;
+  const libre = ingreso + saldoAnterior - gastos - compromisos - ahorroAsignado - reservaDominical;
   const disponible = Math.max(0, libre);
   const ahorroSugerido = Math.min(disponible, Math.floor(ingreso * .1));
   const reservaSugerida = Math.floor((disponible - ahorroSugerido) * .8);
   return {
-    hayQuincena: Boolean(period), ingreso, gastos, compromisos, ahorroAsignado, libre,
+    hayQuincena: Boolean(period), ingreso, saldoAnterior, reservaDominical, gastos, compromisos, ahorroAsignado, libre,
     ahorroSugerido, reservaSugerida, gustosSugeridos: disponible - ahorroSugerido - reservaSugerida,
     ahorro: goals.reduce((s, g) => s + money(g.saved), 0),
     metas: goals.map(g => ({ nombre: g.name, ahorrado: money(g.saved), objetivo: money(g.target) })),

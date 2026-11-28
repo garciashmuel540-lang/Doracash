@@ -7,6 +7,7 @@ import {
   monthExpenseEstimate,
   openPeriod,
   periodExpenses,
+  periodFunds,
   periodSurplus,
   roleAmount,
   savingsRate,
@@ -31,7 +32,7 @@ function PlanPage() {
     );
   }
 
-  const income = period.income;
+  const income = periodFunds(period);
   const expenses = periodExpenses(period);
   const surplus = periodSurplus(period);
   const needs = roleAmount(period, "need") + roleAmount(period, "debt");

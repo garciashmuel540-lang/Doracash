@@ -8,6 +8,7 @@ import { PageHeader, useShell } from "@/components/shell";
 import { playFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/cn";
 import { repeatedCharges, todayInManagua } from "@/lib/daily";
+import { SpendingPlanner } from "./spending-planner";
 import { DailyTools } from "./daily-tools";
 import { ItemRow } from "@/components/item-row";
 import {
@@ -24,6 +25,7 @@ import {
   formatMoney,
   formatRange,
   periodExpenses,
+  periodFunds,
   pendingMoneyLocations,
   periodSurplus,
   ratePhrase,
@@ -56,6 +58,7 @@ export function QuincenaPanel() {
   const period = periods.find((item) => item.status === "open");
   const completedPeriodId = period && allPaymentsComplete(period) ? period.id : undefined;
   const [rolloverOpen, setRolloverOpen] = useState(false);
+  const [carry, setCarry] = useState(0);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
@@ -72,14 +75,6 @@ export function QuincenaPanel() {
       clearIntent();
     }
   }, [intent, period, clearIntent]);
-
-  useEffect(() => {
-    if (!completedPeriodId) return;
-    const timer = window.setTimeout(() => {
-      openNext(true, true, completedPeriodId);
-    }, 8000);
-    return () => window.clearTimeout(timer);
-  }, [completedPeriodId, openNext]);
 
   if (!period) {
     return (
@@ -164,6 +159,7 @@ export function QuincenaPanel() {
         <div className="balance-details">
           <label className="balance-income-label"><ArrowDownLeft className="size-4" /> Ingreso de la quincena</label>
           <div className="balance-income mt-2"><MoneyField label="Ingreso neto de la quincena" value={period.income} onChange={setIncome} /></div>
+          {Boolean(period.openingBalance) && <p className="mt-2 text-xs text-muted">Saldo de la quincena anterior · {formatMoney(period.openingBalance!)}</p>}
           <div className="balance-stats mt-5 flex items-start justify-between gap-4 text-sm">
           <div>
             <p className="text-muted">Gastos</p>
@@ -177,14 +173,17 @@ export function QuincenaPanel() {
             <p className="text-xs text-muted">{ratePhrase(rate)}</p>
           </div>
         </div>
-        <p className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 text-sm text-muted" role="status">
-            Pendiente para la otra quincena <strong className="tabular-nums text-fg">{formatMoney(deferred)}</strong>
-        </p>
-        <div className="budget-progress" role="progressbar" aria-label="Porcentaje del ingreso asignado" aria-valuemin={0} aria-valuemax={100} aria-valuenow={period.income > 0 ? Math.min(100, Math.max(0, Math.round((1 - rate) * 100))) : 0}><span style={{ width: `${period.income > 0 ? Math.min(100, Math.max(0, (1 - rate) * 100)) : 0}%` }} /></div>
-        <p className="mt-2 text-xs text-muted">{period.income > 0 ? 'Lo que ya asignaste de tu ingreso' : 'Registra tu ingreso para ver tu margen'}</p>
+        <details className="mt-3 text-sm text-muted"><summary className="cursor-pointer py-2">Pendiente para la otra quincena · <strong>{formatMoney(deferred)}</strong></summary>
+          {period.categories.filter(c => categoryPaidAmount(c) > 0 && categoryPendingAmount(c) > 0).map(c =>
+            <div className="daily-row" key={c.id}><span>{c.name}</span><strong>{formatMoney(categoryPendingAmount(c))}</strong></div>)}
+          {!deferred && <p>Sin saldos pendientes de abonos parciales.</p>}
+        </details>
+        <div className="budget-progress" role="progressbar" aria-label="Porcentaje del ingreso asignado" aria-valuemin={0} aria-valuemax={100} aria-valuenow={periodFunds(period) > 0 ? Math.min(100, Math.max(0, Math.round((1 - rate) * 100))) : 0}><span style={{ width: `${periodFunds(period) > 0 ? Math.min(100, Math.max(0, (1 - rate) * 100)) : 0}%` }} /></div>
+        <p className="mt-2 text-xs text-muted">{periodFunds(period) > 0 ? 'Lo que ya asignaste de tu ingreso' : 'Registra tu ingreso para ver tu margen'}</p>
         </div>
       </section>
 
+      <SpendingPlanner key={"plan-" + period.id} period={period} />
       <DailyTools key={period.id} period={period} />
 
       <details className="bank-summary card mt-4 px-4 py-3">
@@ -464,24 +463,32 @@ export function QuincenaPanel() {
 
       {completedPeriodId && (
         <p className="mt-4 text-sm text-muted" role="status">
-          Pagos completos. La siguiente quincena se abrirá en unos segundos.
+          Pagos completos. Ya podés revisar el cierre y elegir cuánto saldo trasladar.
         </p>
       )}
-      <Button aria-haspopup="dialog" variant="ghost" className="mt-5" onClick={() => setRolloverOpen(true)}>
-        Pasar a la siguiente quincena
+      <Button aria-haspopup="dialog" variant="ghost" className="mt-5" onClick={() => { setCarry(0); setRolloverOpen(true); }}>
+        Revisar cierre de quincena
       </Button>
-      <Modal title="Abrir otra quincena" open={rolloverOpen} onOpenChange={setRolloverOpen}>
+      <Modal title="Cierre de quincena" open={rolloverOpen} onOpenChange={setRolloverOpen}>
         <div className="flex flex-col gap-3 p-5">
           <p className="text-sm text-muted">
             Esta quincena quedará en Historial. Los pagos pendientes pasarán a la siguiente por el monto que falta.
           </p>
-          <Button onClick={() => {
-            openNext(true, true);
+          <div className="daily-note"><div>Saldo estimado al cierre · <strong>{formatMoney(bankBalance)}</strong></div>
+            <div>Pagos y abonos registrados · {formatMoney(paidRubrosTotal(period))}</div>
+            <details><summary>Pendiente para la próxima quincena · {formatMoney(period.categories.reduce((sum, c) => sum + categoryPendingAmount(c), 0))}</summary>
+              {period.categories.filter(c => categoryPendingAmount(c) > 0).map(c => <div className="daily-row" key={c.id}><span>{c.name}</span><strong>{formatMoney(categoryPendingAmount(c))}</strong></div>)}
+            </details></div>
+          <div>Saldo que querés trasladar<MoneyField label="Saldo que querés trasladar" value={carry} onChange={setCarry} /></div>
+          {carry > Math.max(0, bankBalance) && <p className="text-sm text-bad">El traslado supera tu saldo estimado.</p>}
+          {Boolean(period.trash?.length) && <p className="text-sm text-muted">Tenés movimientos en la papelera. Podés restaurarlos antes de cerrar.</p>}
+          <Button disabled={carry > Math.max(0, bankBalance)} onClick={() => {
+            openNext(true, true, undefined, carry);
             setRolloverOpen(false);
             toast.success("Nueva quincena lista");
           }}>Abrir con rubros recurrentes</Button>
-          <Button variant="ghost" onClick={() => {
-            openNext(false, true);
+          <Button variant="ghost" disabled={carry > Math.max(0, bankBalance)} onClick={() => {
+            openNext(false, true, undefined, carry);
             setRolloverOpen(false);
             toast.success("Nueva quincena lista");
           }}>Abrir solo con pendientes</Button>

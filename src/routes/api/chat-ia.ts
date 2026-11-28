@@ -14,7 +14,7 @@ const inputSchema = z.object({
       partidas: z.array(z.object({ nombre: z.string().max(100), categoria: z.string().max(100), monto: amount, incluidoEnPresupuesto: z.boolean() })).min(1).max(100),
     }).nullable().optional(),
     tarjeta: z.string().trim().max(6000).nullable().optional(),
-    hayQuincena: z.boolean(), ingreso: amount, gastos: amount, compromisos: amount, ahorroAsignado: amount,
+    hayQuincena: z.boolean(), ingreso: amount, saldoAnterior: amount.optional(), reservaDominical: amount.optional(), gastos: amount, compromisos: amount, ahorroAsignado: amount,
     ahorro: amount, pendienteParaOtraQuincena: amount.optional(),
     metas: z.array(z.object({ nombre: z.string().max(100), ahorrado: amount, objetivo: amount })).max(100),
     rubros: z.array(z.object({ nombre: z.string().max(100), tipo: z.enum(['need', 'life', 'debt']), monto: amount })).max(100),
@@ -37,7 +37,7 @@ export const Route = createFileRoute('/api/chat-ia')({
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return json({ ok: false, error: 'La conexión de IA aún no está configurada. Puedes consultar el cálculo local mientras tanto.' }, 503);
       // Recalcular las propuestas: el modelo no decide cuánto dinero existe.
-      const libre = contexto.ingreso - contexto.gastos - contexto.compromisos - contexto.ahorroAsignado;
+      const libre = contexto.ingreso + (contexto.saldoAnterior ?? 0) - contexto.gastos - contexto.compromisos - contexto.ahorroAsignado - (contexto.reservaDominical ?? 0);
       const disponible = Math.max(0, libre);
       const ahorroSugerido = Math.min(disponible, Math.floor(contexto.ingreso * .1));
       const reservaSugerida = Math.floor((disponible - ahorroSugerido) * .8);
