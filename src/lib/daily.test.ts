@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { currentSundayReserve, allPaymentsComplete, categoryPendingAmount, deferredPaymentsTotal, pendingMoneyLocations, periodExpenses, roleAmount, categoriesForNextPeriod, estimatedBankBalance, periodSurplus, type Period } from "./finance.ts";
-import { balanceFlow, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, todayInManagua, validDailyFields } from "./daily.ts";
+import { balanceFlow, currentBalances, duplicateIds, expectedBalances, forecast, parseExpense, repeatedCharges, todayInManagua, validDailyFields } from "./daily.ts";
 const records = new Map<string, string>();
 Object.defineProperty(globalThis, "window", { configurable: true, value: {
   localStorage: {
@@ -75,6 +75,40 @@ test("reconciliation keeps a stable baseline, respects transfers and preserves d
   assert.ok(get().undoMovement("test", transfer.id));
   assert.equal(expectedBalances(baseline, balanceFlow(current())).cash, 70);
   assert.equal(validDailyFields({ ...current(), payday: "2026-02-31" }), false);
+});
+
+test("retiro y depósito mueven exactamente el monto disponible entre saldos y conservan el total", async () => {
+  const p = { ...start(), income: 6337.93 };
+  useFinance.setState({ periods: [p] });
+  const initial = { cash: 0, account: 6337.93 };
+  assert.deepEqual(currentBalances(current()), initial);
+  get().checkBalances(p.id, initial);
+  const free = periodSurplus(current());
+  assert.equal(get().recordTransfer(p.id, "cash", 1915), null);
+  assert.equal(get().recordTransfer(p.id, "account", 6400), null);
+  assert.ok(get().recordTransfer(p.id, "account", 1915));
+  assert.deepEqual(currentBalances(current()), { cash: 1915, account: 4422.93 });
+  assert.ok(get().recordTransfer(p.id, "cash", 15.75));
+  assert.deepEqual(currentBalances(current()), { cash: 1899.25, account: 4438.68 });
+  assert.ok(get().recordTransfer(p.id, "cash", 1899.25));
+  await useFinance.persist.rehydrate();
+  assert.deepEqual(currentBalances(current()), initial);
+  assert.equal(periodSurplus(current()), free);
+  assert.equal(current().movements?.length, 3);
+});
+
+test("un depósito anterior en sentido equivocado se puede deshacer sin cambiar el conteo", () => {
+  const p = { ...start(), income: 6337.93 };
+  useFinance.setState({ periods: [p] });
+  get().checkBalances(p.id, { cash: 0, account: 6337.93 });
+  const record = current().reconciliation;
+  useFinance.setState({ periods: [{ ...current(), movements: [{ id: "original", kind: "transfer",
+    name: "Depósito a cuenta", date: today, location: "cash", amount: 1915 }] }] });
+  assert.deepEqual(currentBalances(current()), { cash: -1915, account: 8252.93 });
+  assert.ok(get().undoMovement(p.id, "original"));
+  assert.ok(get().recordTransfer(p.id, "account", 1915));
+  assert.deepEqual(currentBalances(current()), { cash: 1915, account: 4422.93 });
+  assert.deepEqual(current().reconciliation, record);
 });
 
 test("calendar includes overdue, partial and same-day dues; excludes paid and later charges", () => {

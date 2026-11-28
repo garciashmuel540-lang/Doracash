@@ -4,7 +4,7 @@ import { playFeedback } from "@/lib/feedback";
 import { feedbackToast as toast } from "@/lib/feedback-toast";
 import { Button, Modal, MoneyField } from "./ui";
 import { categoryPendingAmount, formatMoney, periodFunds, periodSurplus, type MoneyLocation, type Period } from "@/lib/finance";
-import { balanceFlow, duplicateIds, expectedBalances, forecast, hasComparison, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
+import { afterTransfer, currentBalances, duplicateIds, expectedBalances, forecast, hasComparison, parseExpense, repeatedCharges, rounded, todayInManagua, type Movement } from "@/lib/daily";
 import { useFinance } from "@/lib/store";
 
 const place = { account: "Cuenta", cash: "Efectivo" };
@@ -86,12 +86,18 @@ function Reconcile({ period }: { period: Period }) {
   const cashField = useRef<HTMLInputElement>(null);
   const removeLastCheck = useFinance(s => s.removeLastCheck);
   const [transfer, setTransfer] = useState("");
+  const [transferMessage, setTransferMessage] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
   const [from, setFrom] = useState<MoneyLocation>("account");
   const checkBalances = useFinance(s => s.checkBalances);
   const recordTransfer = useFinance(s => s.recordTransfer);
   const c = readAmount(cash), a = readAmount(account, true), t = readAmount(transfer);
   const record = period.reconciliation;
-  const expected = record && edit !== "first" && expectedBalances(record.first, edit === "last" ? record.last.flow : balanceFlow(period));
+  const balances = currentBalances(period);
+  const expected = record && edit !== "first" && (edit === "last" ? expectedBalances(record.first, record.last.flow) : balances);
+  const insufficient = t !== null && t > 0 && t > balances[from];
+  const preview = t !== null && t > 0 && !insufficient ? afterTransfer(balances, from, t) : null;
+  const lastTransfer = period.movements?.filter(m => m.kind === "transfer").at(-1);
   function clearForm() {
     setEdit(undefined); setCash(""); setAccount(""); setConfirmDelete(false);
   }
@@ -107,6 +113,54 @@ function Reconcile({ period }: { period: Period }) {
     return delta === 0 ? "Coincide" : (delta < 0 ? "Faltan " : "Sobran ") + formatMoney(Math.abs(delta));
   }
   return <div className="daily-form">
+    <div>
+      <Button variant="quiet" aria-expanded={guideOpen} aria-controls="reconcile-guide" onClick={() => setGuideOpen(!guideOpen)}>
+        {guideOpen ? "Ocultar guía" : "Cómo usar la conciliación"}
+      </Button>
+      <ol id="reconcile-guide" hidden={!guideOpen} className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+        <li><strong>Contá tu dinero.</strong> Ingresá el efectivo que tenés en mano y el saldo que ves en el banco. Guardá tu primer conteo.</li>
+        <li><strong>Elegí qué hiciste.</strong> Si sacaste C$200 del cajero, elegí «Retiré efectivo». Tu cuenta baja C$200 y tu efectivo sube C$200. Si llevaste billetes al banco, elegí «Deposité en cuenta».</li>
+        <li><strong>Volvé a contar.</strong> Compará tus saldos reales con los esperados. Si hay diferencia, revisá el sentido del traslado y los gastos que pagaste desde el último conteo.</li>
+      </ol>
+    </div>
+    <section className="daily-note" aria-label="Saldos esperados ahora" aria-live="polite">
+      <h3>Saldos esperados ahora</h3>
+      <dl className="mt-2 grid grid-cols-2 gap-3">{(["cash", "account"] as const).map(k =>
+        <div key={k}><dt className="text-sm text-muted">{place[k]}</dt><dd className="break-words font-semibold tabular-nums">{formatMoney(balances[k])}</dd></div>
+      )}</dl>
+      {!record && <p className="mt-2">Estimación según tus registros. Guardá tu primer conteo para usar tus saldos reales como punto de partida.</p>}
+      {balances.cash < 0 && <p className="mt-2">El efectivo esperado quedó en negativo. Revisá si anotaste un depósito cuando en realidad hiciste un retiro, o si falta registrar efectivo.</p>}
+    </section>
+    {!edit && <details className="border-b border-line pb-2"><summary><ArrowLeftRight className="inline size-4" /> Registrar traslado</summary>
+      <form className="daily-form mt-2" onSubmit={e => {
+        e.preventDefault();
+        if (!preview || !t) return;
+        const movement = recordTransfer(period.id, from, t);
+        if (!movement) { setTransferMessage("Revisá el saldo de origen y volvé a intentar."); return; }
+        saved(period.id, movement);
+        setTransferMessage(movement.name + " guardado por " + formatMoney(t) + ".");
+        setTransfer("");
+      }}>
+        <div className="daily-switch" role="group" aria-label="Tipo de traslado">
+          {(["account", "cash"] as const).map(k => <button type="button" key={k} aria-pressed={from === k} onClick={() => { setFrom(k); setTransferMessage(""); }}>
+            {k === "account" ? "Retiré efectivo" : "Deposité en cuenta"}
+          </button>)}
+        </div>
+        <p>{from === "account" ? "Sale de tu cuenta y entra a tu efectivo." : "Sale de tu efectivo y entra a tu cuenta."}</p>
+        <label>Monto trasladado<input inputMode="decimal" placeholder="C$ 0.00" value={transfer} onChange={e => { setTransfer(e.target.value); setTransferMessage(""); }} /></label>
+        {insufficient && <p role="alert">El monto supera lo disponible en {from === "account" ? "tu cuenta" : "efectivo"} ({formatMoney(balances[from])}). Revisá el origen o tu conteo.</p>}
+        {preview && <div className="daily-note" aria-live="polite"><strong>Así quedarían tus saldos</strong>
+          <p>Efectivo · {formatMoney(preview.cash)}</p><p>Cuenta · {formatMoney(preview.account)}</p>
+        </div>}
+        <Button type="submit" disabled={!preview}>{from === "account" ? "Guardar retiro" : "Guardar depósito"}</Button>
+        {transferMessage && <p role="status">{transferMessage}</p>}
+      </form>
+    </details>}
+    {lastTransfer && !edit && <div className="daily-note">
+      <strong>Último traslado</strong>
+      <p>{shortDate(lastTransfer.date)} · {lastTransfer.location === "account" ? "Cuenta → Efectivo" : "Efectivo → Cuenta"} · {formatMoney(lastTransfer.amount)}</p>
+      <Button variant="ghost" onClick={() => { undo(period.id, lastTransfer.id); setTransferMessage(""); }}>Deshacer este traslado</Button>
+    </div>}
     <p>{edit ? `Corregí las cantidades del ${edit === "first" ? "primer" : "último"} conteo del ${shortDate(record![edit].date)}.` : record ? "Compará lo que tenés con los movimientos registrados desde tu primer conteo." : "Anotá cuánto tenés ahora en cada lugar. Este primer conteo será la base de la quincena."}</p>
     <form className="daily-form" onSubmit={e => { e.preventDefault(); if (c !== null && a !== null && checkBalances(period.id, { cash: c, account: a }, edit)) {
       clearForm(); toast.success(edit ? "Conteo corregido" : record ? "Comparación guardada" : "Primer conteo guardado");
@@ -133,13 +187,7 @@ function Reconcile({ period }: { period: Period }) {
           if (removeLastCheck(period.id)) { clearForm(); toast.undo("Conteo borrado"); }
         }}>Sí, borrar conteo</Button><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancelar</Button></div></div>}
     </div>}
-    <details><summary><ArrowLeftRight className="inline size-4" /> Registrar traslado</summary>
-      <form className="daily-form mt-3" onSubmit={e => { e.preventDefault(); if (!t) return; const m = recordTransfer(period.id, from, t); if (m) { saved(period.id, m); setTransfer(""); } }}>
-        <label>Dirección<select value={from} onChange={e => setFrom(e.target.value as MoneyLocation)}><option value="account">Cuenta → Efectivo</option><option value="cash">Efectivo → Cuenta</option></select></label>
-        <label>Monto trasladado<input inputMode="decimal" placeholder="C$ 0.00" value={transfer} onChange={e => setTransfer(e.target.value)} /></label>
-        <Button variant="quiet" type="submit" disabled={!t || t <= 0}>Guardar traslado</Button>
-      </form>
-    </details>
+
   </div>;
 }
 

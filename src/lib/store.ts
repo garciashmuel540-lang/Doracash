@@ -25,7 +25,7 @@ import {
   type Period,
   type Role,
 } from "./finance.ts";
-import { balanceFlow, hasComparison, repeatedCharges, rounded, todayInManagua, validDailyFields, validDate, type Balances, type Movement } from "./daily.ts";
+import { balanceFlow, currentBalances, hasComparison, repeatedCharges, rounded, todayInManagua, validDailyFields, validDate, type Balances, type Movement } from "./daily.ts";
 
 type Undo = () => boolean;
 
@@ -322,7 +322,9 @@ export const useFinance = create<Store>()(
       recordTransfer: (periodId, from, amount) => {
         const state = get();
         const period = openPeriod(state);
-        if (period?.id !== periodId || clampMoney(amount) <= 0) return null;
+        if (period?.id !== periodId || (from !== "cash" && from !== "account") ||
+            !Number.isFinite(amount) || amount <= 0 || amount !== clampMoney(amount) ||
+            amount > currentBalances(period)[from]) return null;
         const movement: Movement = { id: uid("mov"), kind: "transfer", date: todayInManagua(),
           name: from === "account" ? "Retiro de efectivo" : "Depósito a cuenta", location: from, amount: clampMoney(amount) };
         set(mapOpen(state, p => ({ ...p, movements: [...(p.movements ?? []), movement] })));

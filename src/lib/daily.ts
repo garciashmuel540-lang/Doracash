@@ -68,13 +68,17 @@ export function duplicateIds(entries: Movement[]) {
   return ids;
 }
 
+export function afterTransfer(balances: Balances, from: MoneyLocation, amount: number): Balances {
+  const toCash = from === "account" ? amount : -amount;
+  return { cash: rounded(balances.cash + toCash), account: rounded(balances.account - toCash) };
+}
+
 export function balanceFlow(period: Period): Balances {
-  const flow = { account: periodFunds(period) - (period.setAside || 0), cash: 0 };
+  let flow = { account: periodFunds(period) - (period.setAside || 0), cash: 0 };
   const byCategory = new Map<string, Movement[]>();
   for (const m of period.movements ?? []) {
     if (m.kind === "transfer") {
-      flow[m.location] -= m.amount;
-      flow[m.location === "cash" ? "account" : "cash"] += m.amount;
+      flow = afterTransfer(flow, m.location, m.amount);
     } else if (m.categoryId) {
       const group = byCategory.get(m.categoryId);
       if (group) group.push(m);
@@ -121,6 +125,11 @@ export function expectedBalances(first: BalanceCheck, flow: Balances): Balances 
     account: rounded(first.counted.account + flow.account - first.flow.account),
     cash: rounded(first.counted.cash + flow.cash - first.flow.cash),
   };
+}
+
+export function currentBalances(period: Period): Balances {
+  const flow = balanceFlow(period);
+  return period.reconciliation ? expectedBalances(period.reconciliation.first, flow) : flow;
 }
 
 const DAY = 86400000;
